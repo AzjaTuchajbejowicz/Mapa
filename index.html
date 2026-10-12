@@ -588,10 +588,10 @@ function openGold(g){
      const box=openKey==='gold:'+g.n?$('goldWiki'):null; if(!box)return;
      const text=(Object.values(j.query.pages)[0].extract||'').replace(/\n=+[^=\n]+=+\n/g,'\n');
      let parts;
-     if(g.a){parts=[text.split(/\n/).filter(x=>x.trim()).slice(0,4).join('\n')]}
+     if(g.a){parts=[text.split(/\n/).filter(x=>x.trim()).slice(1,5).join('\n')]}
      else{parts=text.replace(/\n+/g,' ').split(/(?<=[.!?])\s+(?=[A-ZĄĆĘŁŃÓŚŹŻ0-9])/).filter(x=>/skarb/i.test(x)&&!/Skarb\w* Państwa/.test(x)).slice(0,5)}
      const body=parts.join(g.a?'':'\n\n').trim();
-     box.innerHTML=body?'<div><p class="eyebrow">Z Wikipedii</p><p class="txt">'+esc(cut(body,1600))+'</p></div>':'';
+     box.innerHTML=body?'<div><p class="eyebrow">'+(g.a?'Więcej z Wikipedii':'Z Wikipedii')+'</p><p class="txt">'+esc(cut(body,1600))+'</p></div>':'';
    }).catch(()=>{const box=$('goldWiki');if(box)box.innerHTML=''});
 }
 fetch('data/skarby.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(d=>{
