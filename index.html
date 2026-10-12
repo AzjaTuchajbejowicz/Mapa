@@ -37,6 +37,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px;
   font:600 15px/1 var(--display);letter-spacing:.06em;text-transform:uppercase}
+.bar .btn{padding:9px 11px}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 
 .fab{position:fixed;z-index:900;right:12px;bottom:calc(46px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:50%;
@@ -77,6 +78,18 @@ table.kv td:first-child{color:var(--muted);width:38%}
 .dot.mill{background:var(--mill);box-shadow:0 0 0 1px var(--mill)}
 .dot.mill.ring{background:var(--surface);box-shadow:0 0 0 3px var(--mill) inset,0 0 0 1px var(--mill)}
 .dot.mill.faint{opacity:.55}
+.lg{display:grid;grid-template-columns:30px 1fr;gap:10px 12px;align-items:center;margin:0}
+.lg dt{display:flex;justify-content:center}
+.lg dd{margin:0;min-width:0}
+.lg dd b{font-weight:600}
+.lg dd small{display:block;color:var(--muted);font-size:13px}
+.sw-area{width:24px;height:18px;border-radius:4px;background:rgba(220,30,30,.45);border:2px solid #a00000}
+.sw-road{width:28px;height:0;border-top:4px dashed var(--road)}
+.sw-lidar{width:24px;height:18px;border-radius:4px;background:linear-gradient(135deg,#f2f2f2,#8a8a8a);border:1px solid var(--line)}
+.sw-me{width:16px;height:16px;border-radius:50%;background:#1a73e8;border:2px solid #fff;box-shadow:0 0 0 6px rgba(26,115,232,.18)}
+details.how{border-top:1px solid var(--line);padding-top:10px}
+details.how summary{font:600 15px/1.2 var(--display);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:6px 0}
+details.how ol{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
 .dot.lidar{border-radius:3px;background:linear-gradient(135deg,#eee,#777);box-shadow:0 0 0 1px var(--line)}
 .row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -93,6 +106,7 @@ table.kv td:first-child{color:var(--muted);width:38%}
 
 <div class="bar">
   <h1>Mapa detektorysty</h1>
+  <button class="btn" id="btnLegend" type="button">Legenda</button>
   <button class="btn primary" id="btnLayers" type="button">Warstwy</button>
 </div>
 
@@ -150,6 +164,52 @@ table.kv td:first-child{color:var(--muted);width:38%}
   </div>
 </section>
 
+<section class="sheet" id="legend" hidden aria-label="Legenda">
+  <header><h2>Legenda</h2><button class="x" type="button" data-close="legend" aria-label="Zamknij">×</button></header>
+  <div class="body">
+    <div class="group">
+      <p class="eyebrow">1 · Stanowiska archeologiczne</p>
+      <dl class="lg">
+        <dt><span class="dot"></span></dt><dd><b>Stanowisko archeologiczne z opisem</b><small>Grodzisko, kurhan, osada itp. z OpenStreetMap. Opis i znaleziska z Wikipedii, jeśli są.</small></dd>
+        <dt><span class="sw-area"></span></dt><dd><b>Zabytek wpisany do rejestru (NID)</b><small>Obszar chroniony prawem. Bez pozwolenia konserwatora zabytków nie wolno tu szukać.</small></dd>
+      </dl>
+    </div>
+    <div class="group">
+      <p class="eyebrow">2 · Dawne szlaki</p>
+      <dl class="lg">
+        <dt><span class="sw-road"></span></dt><dd><b>Dawny trakt (XVI–XIX w.)</b><small>Linia łączy miasta na trasie. Prawdziwa droga mogła biec kilka kilometrów obok.</small></dd>
+        <dt><span class="sw-lidar"></span></dt><dd><b>Rzeźba terenu (LIDAR)</b><small>Widoczna po włączeniu w Warstwach. Wąwozy, nasypy, wały i ślady dawnych dróg.</small></dd>
+      </dl>
+    </div>
+    <div class="group">
+      <p class="eyebrow">3 · Młyny i wiatraki</p>
+      <dl class="lg">
+        <dt><span class="dot mill"></span></dt><dd><b>Młyn wodny</b><small>Istniejący młyn lub jego pozostałości.</small></dd>
+        <dt><span class="dot mill ring"></span></dt><dd><b>Wiatrak</b><small>Istniejący wiatrak lub jego pozostałości.</small></dd>
+        <dt><span class="dot mill faint"></span></dt><dd><b>Miejsce po młynie</b><small>Miejscowość z „Młyn” lub „Wiatrak” w nazwie. Budynku zwykle już nie ma.</small></dd>
+      </dl>
+    </div>
+    <div class="group">
+      <p class="eyebrow">Ty</p>
+      <dl class="lg">
+        <dt><span class="sw-me"></span></dt><dd><b>Twoja pozycja</b><small>Jasne koło wokół kropki to dokładność GPS.</small></dd>
+      </dl>
+    </div>
+    <details class="how" id="howTo">
+      <summary>Jak korzystać z mapy</summary>
+      <ol>
+        <li><b>Przybliż mapę.</b> Stanowiska i młyny pojawiają się, gdy podziałka w lewym górnym rogu pokazuje 10 km lub mniej.</li>
+        <li><b>Dotknij kropki, linii albo czerwonego obszaru,</b> a od dołu wysunie się karta z opisem. Dotknij mapy, żeby ją zamknąć.</li>
+        <li><b>Warstwy</b> włączają i wyłączają poszczególne dane. Tam też zmienisz podkład: <b>Ortofoto</b> pokazuje zdjęcie lotnicze pól, <b>Teren</b> poziomice.</li>
+        <li><b>Przycisk z celownikiem</b> w prawym dolnym rogu pokazuje, gdzie jesteś.</li>
+        <li><b>Prowadź</b> w karcie otwiera nawigację do tego miejsca w Mapach Google.</li>
+        <li><b>Pasek na dole</b> mówi, ile obiektów jest w widoku i czy dane się wczytują.</li>
+      </ol>
+    </details>
+    <p class="note">Poszukiwania zabytków z wykrywaczem wymagają pozwolenia wojewódzkiego konserwatora zabytków. Mapa pomaga wybrać teren, ale nie zastępuje pozwolenia.</p>
+  </div>
+</section>
+
 <section class="sheet" id="card" hidden aria-label="Stanowisko">
   <header><h2 id="cardTitle"></h2><button class="x" type="button" data-close="card" aria-label="Zamknij">×</button></header>
   <div class="body" id="cardBody"></div>
@@ -185,9 +245,13 @@ setBase(baseName);
 $('baseSeg').addEventListener('click',e=>{const b=e.target.closest('button[data-base]');if(b)setBase(b.dataset.base)});
 
 /* ---------- panele ---------- */
-function openSheet(id){['layers','card'].forEach(s=>{$(s).hidden=s!==id})}
-function closeSheets(){$('layers').hidden=true;$('card').hidden=true}
+const SHEETS=['layers','card','legend'];
+function openSheet(id){SHEETS.forEach(s=>{$(s).hidden=s!==id})}
+function closeSheets(){SHEETS.forEach(s=>{$(s).hidden=true})}
+function anyOpen(){return SHEETS.some(s=>!$(s).hidden)}
 $('btnLayers').addEventListener('click',()=>{$('layers').hidden?openSheet('layers'):closeSheets()});
+$('btnLegend').addEventListener('click',()=>{$('legend').hidden?openSheet('legend'):closeSheets()});
+if(!store.get('seenLegend',false)){openSheet('legend');$('howTo').open=true;store.set('seenLegend',true)}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-close]');if(b)$(b.dataset.close).hidden=true});
 function showCard(title,html){$('cardTitle').textContent=title;$('cardBody').innerHTML=html;$('cardBody').scrollTop=0;openSheet('card')}
 
@@ -378,7 +442,7 @@ function parseInfo(txt){
     [...l.getElementsByTagNameNS('*','Attribute')].forEach(a=>{const v=a.textContent.replace(/\s+/g,' ').replace(/[;\s]+$/,'').trim();if(v)f[a.getAttribute('Name')]=v});return f})
     .filter(f=>Object.keys(f).length);
 }
-map.on('click',e=>{if(!$('layers').hidden||!$('card').hidden){closeSheets();return}nidInfo(e)});
+map.on('click',e=>{if(anyOpen()){closeSheets();return}nidInfo(e)});
 
 
 /* ================= WARSTWA 2: dawne szlaki XVI–XIX w. ================= */
