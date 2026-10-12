@@ -23,7 +23,9 @@ QUERIES = ['"była karczma"', '"znajdowała się karczma"', '"karczma i młyn"',
            '"dwie karczmy"', '"karczma dworska"', '"karczma przydrożna"', '"zabytkowa karczma"', '"drewniana karczma"',
            '"murowana karczma"', '"istniała karczma"', '"austeria"', '"zajazd z XVIII"', '"zajazd z XIX"', '"karczmy"',
            'karczma', 'karczmą', 'karczmie', 'karczm']
-HIT = re.compile(r"karczm|austeri|zajazd|krczm", re.I)
+# tylko rzeczownik pisany małą literą: „była karczma”, „karczmę”, a nie nazwy typu „Mała Karczma”
+# z list miejscowości w szablonach nawigacyjnych
+HIT = re.compile(r"(?<![A-ZĄĆĘŁŃÓŚŹŻ])\b(karczm|austeri|zajazd|krczm)")
 MODERN = re.compile(r"restaurac|hotel|pizzer|gastronom|catering|sieć karczem|lokal|festiwal|serial|film|piosenk|album", re.I)
 DROP = re.compile(r"^(Muzeum|Skansen|Park Etnograficzny|Sądecki Park|Karczma|Kalendarium|\d)")
 
