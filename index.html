@@ -163,7 +163,7 @@ table.kv td:first-child{color:var(--muted);width:38%}
     <div class="group">
       <p class="eyebrow">4 · ZABYTKI.PL</p>
       <label class="row"><span class="dot zea"></span>
-        <span class="lab">Ewidencja zabytków archeologicznych<small>Te same stanowiska co na mapie zabytek.pl: setki tysięcy miejsc z badań AZP, z datowaniem i funkcją. Dane NID. Dotknij punktu, żeby zobaczyć opis.</small>
+        <span class="lab">Ewidencja zabytków archeologicznych<small>Te same stanowiska co na mapie zabytek.pl: setki tysięcy miejsc z badań AZP, z datowaniem i funkcją. Dane NID. Widoczne po przybliżeniu mapy do ok. 2 km na podziałce. Dotknij punktu, żeby zobaczyć opis.</small>
         <span class="state" id="stZea"></span></span>
         <input type="checkbox" id="chkZea" checked></label>
     </div>
@@ -412,7 +412,7 @@ async function initNid(){
   if($('chkNid').checked)nidLayer.addTo(map);
 }
 const ZEA='https://usluga.zabytek.gov.pl/ZEA/service.svc/get', ZEAL='Ewidencja_zabytków_archeologicznych';
-const zeaLayer=new (RecolorWMS([0,137,123],[0,77,64],1))(ZEA,{layers:ZEAL,format:'image/png',transparent:true,version:'1.1.1',maxZoom:20,zIndex:5,attribution:'Ewidencja zabytków archeologicznych © NID'});
+const zeaLayer=new (RecolorWMS([0,137,123],[0,77,64],1))(ZEA,{layers:ZEAL,format:'image/png',transparent:true,version:'1.1.1',minZoom:11,maxZoom:20,zIndex:5,attribution:'Ewidencja zabytków archeologicznych © NID'});
 zeaLayer.on('tileerror',()=>{$('stZea').className='state warn';$('stZea').textContent='Usługa NID nie odpowiada na części mapy. Przesuń mapę, żeby spróbować ponownie.'});
 zeaLayer.on('load',()=>{$('stZea').className='state ok';$('stZea').textContent='Połączono z usługą NID.'});
 /* Pyta usługę WMS o obiekty w małym oknie wokół dotkniętego punktu (ok. 8 px w każdą stronę). */
