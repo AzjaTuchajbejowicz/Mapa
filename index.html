@@ -97,7 +97,16 @@ details.how ol{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:colu
 .seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .state{font-size:13px}.state.ok{color:var(--ok)}.state.warn{color:var(--warn)}
 .leaflet-container{font:inherit;background:var(--bg)}
-.leaflet-top{top:calc(52px + env(safe-area-inset-top,0px))}
+.leaflet-top{top:calc(98px + env(safe-area-inset-top,0px))}
+.quick{position:fixed;z-index:950;left:0;right:0;top:calc(52px + env(safe-area-inset-top,0px));display:flex;gap:6px;overflow-x:auto;
+  padding:7px 12px;background:color-mix(in srgb,var(--surface) 88%,transparent);border-bottom:1px solid var(--line);scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.quick::-webkit-scrollbar{display:none}
+.qc{flex:none;display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px 6px 9px;
+  font:600 14px/1 var(--display);letter-spacing:.04em;white-space:nowrap}
+.qc .dot,.qc .sw-area,.qc .sw-road,.qc .sw-lidar{transform:scale(.85)}
+.qc[aria-pressed=false]{opacity:.5;background:var(--bg)}
+.qc[aria-pressed=false] span:last-child{text-decoration:line-through}
+.qc[aria-pressed=true]{border-color:var(--ink)}
 .leaflet-control-attribution{font-size:10px}
 </style>
 </head>
@@ -110,6 +119,15 @@ details.how ol{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:colu
   <button class="btn primary" id="btnLayers" type="button">Warstwy</button>
 </div>
 
+<nav class="quick" id="quick" aria-label="Szybkie włączanie warstw">
+  <button class="qc" type="button" data-chk="chkOsm"><span class="dot"></span><span>Stanowiska</span></button>
+  <button class="qc" type="button" data-chk="chkNid"><span class="sw-area"></span><span>Rejestr NID</span></button>
+  <button class="qc" type="button" data-chk="chkRoads"><span class="sw-road"></span><span>Trakty</span></button>
+  <button class="qc" type="button" data-chk="chkLidar"><span class="sw-lidar"></span><span>LIDAR</span></button>
+  <button class="qc" type="button" data-chk="chkWater"><span class="dot mill"></span><span>Młyny</span></button>
+  <button class="qc" type="button" data-chk="chkWind"><span class="dot mill ring"></span><span>Wiatraki</span></button>
+  <button class="qc" type="button" data-chk="chkMillPlace"><span class="dot mill faint"></span><span>Po młynach</span></button>
+</nav>
 <div class="status" id="status">Ładuję mapę…</div>
 <button class="fab" id="btnLocate" type="button" aria-label="Pokaż moją pozycję">
   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
@@ -561,6 +579,12 @@ $('chkRoads').addEventListener('change',applyRoads); $('chkLidar').addEventListe
   $(id).addEventListener('change',apply); apply();
 });
 applyRoads(); applyLidar(); applyOsm(); initNid();
+/* pasek szybkich przełączników: każdy guzik steruje tym samym polem co panel Warstwy */
+const qcs=[...document.querySelectorAll('#quick .qc')];
+function syncQuick(){qcs.forEach(b=>b.setAttribute('aria-pressed',$(b.dataset.chk).checked))}
+qcs.forEach(b=>b.addEventListener('click',()=>{const c=$(b.dataset.chk);c.checked=!c.checked;c.dispatchEvent(new Event('change'));syncQuick()}));
+document.querySelectorAll('#layers input[type=checkbox]').forEach(c=>c.addEventListener('change',syncQuick));
+syncQuick();
 })();
 </script>
 </body>
