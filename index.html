@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Mapa detektorysty</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Układ: mapa na cały ekran, wąska belka u góry, panel warstw i karta stanowiska wysuwane od dołu (obsługa kciukiem). */
+:root{
+  --bg:#f3f1ea; --surface:#fbfaf6; --ink:#1d2420; --muted:#5d665f; --line:#d5d2c4;
+  --accent:#8a3b12; --accent-ink:#fff; --site:#b3261e; --reg:#6b2fa0; --ok:#2f6b3c; --warn:#9a5b00;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --shadow:0 6px 24px rgba(20,25,20,.22);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#ff7a6b; --reg:#c79bf0; --ok:#7fc98f; --warn:#e9b45a;
+  --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#ff7a6b; --reg:#c79bf0; --ok:#7fc98f; --warn:#e9b45a;
+  --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.45 var(--body);overflow:hidden}
+#map{position:fixed;inset:0;background:var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.bar{position:fixed;z-index:1000;left:0;right:0;top:0;display:flex;align-items:center;gap:10px;
+  padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar h1{font:700 19px/1 var(--display);letter-spacing:.02em;text-transform:uppercase;margin:0;flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px;
+  font:600 15px/1 var(--display);letter-spacing:.06em;text-transform:uppercase}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+.fab{position:fixed;z-index:900;right:12px;bottom:calc(46px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:50%;
+  border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);display:grid;place-items:center}
+.fab svg{width:24px;height:24px;stroke:var(--ink);fill:none;stroke-width:2}
+.status{position:fixed;z-index:900;left:12px;right:76px;bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;color:var(--muted);
+  box-shadow:var(--shadow);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status b{color:var(--ink);font-weight:600}
+
+.sheet{position:fixed;z-index:1100;left:0;right:0;bottom:0;max-height:72%;display:flex;flex-direction:column;
+  background:var(--surface);border-top:1px solid var(--line);border-radius:16px 16px 0 0;box-shadow:var(--shadow);
+  padding-bottom:env(safe-area-inset-bottom,0px);max-width:560px;margin:0 auto}
+.sheet header{display:flex;align-items:flex-start;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.sheet header h2{font:700 22px/1.1 var(--display);letter-spacing:.02em;margin:0;flex:1;min-width:0;text-wrap:balance;overflow-wrap:anywhere}
+.sheet .x{border:0;background:none;font-size:26px;line-height:1;padding:0 4px;color:var(--muted)}
+.sheet .body{overflow:auto;padding:12px 16px 18px;display:flex;flex-direction:column;gap:14px;-webkit-overflow-scrolling:touch}
+#wiki{display:flex;flex-direction:column;gap:14px}
+.eyebrow{font:600 12px/1 var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px}
+.chip.reg{border-color:var(--reg);color:var(--reg);font-weight:600}
+.txt{margin:0;white-space:pre-line;overflow-wrap:anywhere}
+.note{font-size:13px;color:var(--muted);margin:0}
+.links{display:flex;flex-wrap:wrap;gap:8px}
+.links a{color:var(--accent);font-weight:600;text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+table.kv{border-collapse:collapse;width:100%;font-size:14px}
+table.kv td{border-top:1px solid var(--line);padding:5px 6px 5px 0;vertical-align:top;overflow-wrap:anywhere}
+table.kv td:first-child{color:var(--muted);width:38%}
+
+.group{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:12px;padding:6px 0}
+.row .lab{flex:1;min-width:0}
+.row .lab small{display:block;color:var(--muted);font-size:13px}
+.dot{width:14px;height:14px;border-radius:50%;flex:none;background:var(--site);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--site)}
+.dot.reg{border-radius:3px;background:var(--reg);box-shadow:0 0 0 1px var(--reg)}
+.row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px 4px;font:600 14px/1 var(--display);letter-spacing:.05em;text-transform:uppercase}
+.seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.state{font-size:13px}.state.ok{color:var(--ok)}.state.warn{color:var(--warn)}
+.leaflet-container{font:inherit;background:var(--bg)}
+.leaflet-top{top:calc(52px + env(safe-area-inset-top,0px))}
+.leaflet-control-attribution{font-size:10px}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="bar">
+  <h1>Mapa detektorysty</h1>
+  <button class="btn primary" id="btnLayers" type="button">Warstwy</button>
+</div>
+
+<div class="status" id="status">Ładuję mapę…</div>
+<button class="fab" id="btnLocate" type="button" aria-label="Pokaż moją pozycję">
+  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+</button>
+
+<section class="sheet" id="layers" hidden aria-label="Warstwy">
+  <header><h2>Warstwy</h2><button class="x" type="button" data-close="layers" aria-label="Zamknij">×</button></header>
+  <div class="body">
+    <div class="group">
+      <p class="eyebrow">Podkład</p>
+      <div class="seg" id="baseSeg">
+        <button type="button" data-base="mapa" aria-pressed="true">Mapa</button>
+        <button type="button" data-base="orto" aria-pressed="false">Ortofoto</button>
+        <button type="button" data-base="topo" aria-pressed="false">Teren</button>
+      </div>
+    </div>
+    <div class="group">
+      <p class="eyebrow">1 · Stanowiska archeologiczne</p>
+      <label class="row"><span class="dot"></span>
+        <span class="lab">Stanowiska z opisem<small>Punkty z OpenStreetMap i Wikipedii. Dotknij punktu, żeby zobaczyć opis.</small>
+        <span class="state" id="stOsm"></span></span>
+        <input type="checkbox" id="chkOsm" checked></label>
+      <label class="row"><span class="dot reg"></span>
+        <span class="lab">Rejestr zabytków archeologicznych<small>Zasięgi stanowisk wpisanych do rejestru, dane NID. Dotknij obszaru, żeby zobaczyć wpis.</small>
+        <span class="state" id="stNid">Łączę z usługą NID…</span></span>
+        <input type="checkbox" id="chkNid" checked></label>
+    </div>
+    <p class="note">Kolejne warstwy pojawią się tutaj.</p>
+  </div>
+</section>
+
+<section class="sheet" id="card" hidden aria-label="Stanowisko">
+  <header><h2 id="cardTitle"></h2><button class="x" type="button" data-close="card" aria-label="Zamknij">×</button></header>
+  <div class="body" id="cardBody"></div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function status(html){$('status').innerHTML=html}
+
+if(!window.L){status('Nie udało się wczytać biblioteki mapy. Sprawdź połączenie z internetem i odśwież stronę.');return}
+
+/* ---------- mapa i podkłady ---------- */
+const view=store.get('view',{c:[52.07,19.48],z:7});
+const map=L.map('map',{zoomControl:false,preferCanvas:true}).setView(view.c,view.z);
+L.control.scale({imperial:false,position:'topleft'}).addTo(map);
+map.on('moveend',()=>{const c=map.getCenter();store.set('view',{c:[c.lat,c.lng],z:map.getZoom()})});
+
+const bases={
+  mapa:L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:20,subdomains:'abcd',attribution:'© OpenStreetMap, © CARTO'}),
+  orto:L.tileLayer.wms('https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/StandardResolution',{layers:'Raster',format:'image/jpeg',version:'1.1.1',maxZoom:20,attribution:'Ortofotomapa © GUGiK'}),
+  topo:L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenStreetMap, SRTM, © OpenTopoMap'})
+};
+let baseName=store.get('base','mapa'); if(!bases[baseName])baseName='mapa';
+function setBase(n){Object.values(bases).forEach(l=>map.removeLayer(l));bases[n].addTo(map).bringToBack();baseName=n;store.set('base',n);
+  document.querySelectorAll('#baseSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.base===n))}
+setBase(baseName);
+$('baseSeg').addEventListener('click',e=>{const b=e.target.closest('button[data-base]');if(b)setBase(b.dataset.base)});
+
+/* ---------- panele ---------- */
+function openSheet(id){['layers','card'].forEach(s=>{$(s).hidden=s!==id})}
+function closeSheets(){$('layers').hidden=true;$('card').hidden=true}
+$('btnLayers').addEventListener('click',()=>{$('layers').hidden?openSheet('layers'):closeSheets()});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-close]');if(b)$(b.dataset.close).hidden=true});
+function showCard(title,html){$('cardTitle').textContent=title;$('cardBody').innerHTML=html;$('cardBody').scrollTop=0;openSheet('card')}
+
+/* ---------- moja pozycja ---------- */
+let meMarker=null,meCircle=null;
+$('btnLocate').addEventListener('click',()=>{
+  if(!navigator.geolocation){status('Ta przeglądarka nie udostępnia lokalizacji.');return}
+  status('Szukam Twojej pozycji…');
+  navigator.geolocation.getCurrentPosition(p=>{
+    const ll=[p.coords.latitude,p.coords.longitude];
+    if(meMarker){map.removeLayer(meMarker);map.removeLayer(meCircle)}
+    meCircle=L.circle(ll,{radius:p.coords.accuracy,color:'#1a73e8',weight:1,fillOpacity:.12,interactive:false}).addTo(map);
+    meMarker=L.circleMarker(ll,{radius:7,color:'#fff',weight:2,fillColor:'#1a73e8',fillOpacity:1,interactive:false}).addTo(map);
+    map.setView(ll,Math.max(map.getZoom(),15));
+  },err=>{status(err.code===1?'Brak zgody na lokalizację. Strona musi być otwarta z adresu https, żeby telefon podał pozycję.':'Nie udało się ustalić pozycji. Spróbuj ponownie pod gołym niebem.')},
+  {enableHighAccuracy:true,timeout:15000,maximumAge:5000});
+});
+
+/* ================= WARSTWA 1a: stanowiska z opisem (OpenStreetMap + Wikipedia) ================= */
+const OSM_MIN_ZOOM=9;
+const OVERPASS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+const TYPES={tumulus:'kurhan',fortification:'grodzisko',settlement:'osada',necropolis:'cmentarzysko',megalith:'megalit',city:'miasto',
+  castle:'zamek',crannog:'osada nawodna',petroglyph:'ryty naskalne',mineral_extraction:'dawne wydobycie',mine:'dawna kopalnia',
+  roman_villa:'willa rzymska',sacrificial_site:'miejsce kultowe',industrial:'stanowisko produkcyjne',hut_circle:'ślady chat',
+  battlefield:'pole bitwy',motte:'gródek stożkowaty',earthworks:'wały ziemne',hillfort:'grodzisko',barrow:'kurhan',bridge:'most',church:'kościół'};
+const osmGroup=L.layerGroup();
+const sites=new Map(); let loaded=[]; let osmBusy=false, osmTimer=null;
+
+function inside(b){return loaded.some(l=>l.contains(b))}
+function siteName(t){return t['name:pl']||t.name||t.alt_name||(t.site_type&&TYPES[t.site_type]?('Stanowisko: '+TYPES[t.site_type]):'Stanowisko archeologiczne')}
+function addSite(el){
+  const key=el.type+'/'+el.id; if(sites.has(key))return;
+  const lat=el.lat!=null?el.lat:el.center&&el.center.lat, lon=el.lon!=null?el.lon:el.center&&el.center.lon; if(lat==null)return;
+  const t=el.tags||{};
+  const m=L.circleMarker([lat,lon],{radius:8,color:css('--surface')||'#fff',weight:2,fillColor:css('--site')||'#b3261e',fillOpacity:.95,bubblingMouseEvents:false});
+  m.on('click',()=>openSite({key,lat,lon,t}));
+  m.addTo(osmGroup); sites.set(key,m);
+}
+async function overpass(q){
+  let last;
+  for(const u of OVERPASS){
+    try{const r=await fetch(u,{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+      if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}catch(e){last=e}
+  }
+  throw last;
+}
+async function loadSites(){
+  if(!map.hasLayer(osmGroup))return;
+  if(map.getZoom()<OSM_MIN_ZOOM){refreshStatus();return}
+  const b=map.getBounds().pad(0.35); if(inside(map.getBounds())||osmBusy){refreshStatus();return}
+  osmBusy=true; status('Pobieram stanowiska dla tego obszaru…'); $('stOsm').textContent='';
+  try{
+    const bb=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()].map(n=>n.toFixed(5)).join(',');
+    const d=await overpass('[out:json][timeout:25];nwr["historic"~"^(archaeological_site|tumulus)$"]('+bb+');out center tags 3000;');
+    (d.elements||[]).forEach(addSite); loaded.push(b); if(loaded.length>40)loaded.shift();
+    $('stOsm').className='state ok'; $('stOsm').textContent='Wczytano '+sites.size+' stanowisk.';
+  }catch(e){
+    $('stOsm').className='state warn'; $('stOsm').textContent='Serwer OpenStreetMap nie odpowiedział. Przesuń mapę, żeby spróbować ponownie.';
+  }
+  osmBusy=false; refreshStatus();
+  if(!inside(map.getBounds())&&$('stOsm').className!=='state warn')loadSites();
+}
+function refreshStatus(){
+  if(!map.hasLayer(osmGroup)){status('Warstwa stanowisk z opisem jest wyłączona.');return}
+  if(map.getZoom()<OSM_MIN_ZOOM){status('<b>Przybliż mapę</b>, żeby zobaczyć stanowiska z opisem.');return}
+  if($('stOsm').className==='state warn'){status('Nie udało się pobrać stanowisk. Przesuń mapę, żeby spróbować ponownie.');return}
+  const vb=map.getBounds(); let n=0; sites.forEach(m=>{if(vb.contains(m.getLatLng()))n++});
+  status('<b>'+n+'</b> '+(n===1?'stanowisko':'stanowisk')+' z opisem w widoku');
+}
+map.on('moveend',()=>{clearTimeout(osmTimer);osmTimer=setTimeout(loadSites,450)});
+
+function chips(t){
+  const c=[];
+  if(t.site_type)c.push(TYPES[t.site_type]||t.site_type.replace(/_/g,' '));
+  ['historic:civilization','historic:period','historic:era','start_date'].forEach(k=>{if(t[k])c.push(t[k].replace(/_/g,' '))});
+  if(t.heritage||t['ref:nid']||t['heritage:operator'])c.push('zabytek rejestrowy');
+  return c.length?'<div class="chips">'+c.map(x=>'<span class="chip">'+esc(x)+'</span>').join('')+'</div>':'';
+}
+let openKey=null;
+function openSite(s){
+  openKey=s.key; const t=s.t;
+  let h=chips(t);
+  const d=t['description:pl']||t.description||t.note; if(d)h+='<div><p class="eyebrow">Opis</p><p class="txt">'+esc(d)+'</p></div>';
+  h+='<div id="wiki"><p class="note">Szukam opisu w Wikipedii…</p></div>';
+  h+='<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+s.lat+','+s.lon+'">Prowadź</a>'+
+     '<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/'+esc(s.key)+'">Źródło w OSM</a></div>'+
+     '<p class="note">'+s.lat.toFixed(5)+', '+s.lon.toFixed(5)+'</p>';
+  showCard(siteName(t),h);
+  loadWiki(s).catch(()=>{if(openKey===s.key&&$('wiki'))$('wiki').innerHTML='<p class="note">Nie udało się pobrać opisu z Wikipedii.</p>'});
+}
+const cut=(s,n)=>s.length>n?s.slice(0,s.lastIndexOf(' ',n))+'…':s;
+async function wikiTitle(t){
+  const w=t['wikipedia:pl']||t.wikipedia;
+  if(w){const i=w.indexOf(':');const lang=t['wikipedia:pl']?'pl':(i>0?w.slice(0,i):'pl');return{lang,title:t['wikipedia:pl']||(i>0?w.slice(i+1):w)}}
+  if(t.wikidata&&/^Q\d+$/.test(t.wikidata)){
+    const r=await fetch('https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&origin=*&props=sitelinks&ids='+t.wikidata).then(r=>r.json());
+    const sl=(r.entities&&r.entities[t.wikidata]&&r.entities[t.wikidata].sitelinks)||{};
+    if(sl.plwiki)return{lang:'pl',title:sl.plwiki.title}; if(sl.enwiki)return{lang:'en',title:sl.enwiki.title}; if(sl.dewiki)return{lang:'de',title:sl.dewiki.title};
+  }
+  return null;
+}
+async function loadWiki(s){
+  const w=await wikiTitle(s.t); const box=()=>openKey===s.key?$('wiki'):null;
+  if(!w){if(box())box().innerHTML='<p class="note">To stanowisko nie ma artykułu w Wikipedii. Opis znalezisk nie jest dostępny w publicznych danych.</p>';return}
+  const r=await fetch('https://'+w.lang+'.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&prop=extracts&explaintext=1&exsectionformat=wiki&titles='+encodeURIComponent(w.title)).then(r=>r.json());
+  const pg=Object.values((r.query&&r.query.pages)||{})[0]; const text=(pg&&pg.extract)||'';
+  if(!box())return;
+  if(!text){box().innerHTML='<p class="note">Artykuł w Wikipedii jest pusty.</p>';return}
+  const parts=text.split(/\n=+\s*([^=\n]+?)\s*=+\n/); // [wstęp, nagłówek, treść, nagłówek, treść…]
+  let h='<div><p class="eyebrow">Opis · Wikipedia</p><p class="txt">'+esc(cut(parts[0].trim(),1400))+'</p></div>';
+  const want=/znalezisk|zabytk|badani|wykopalisk|odkry|archeolog|skarb|histori|finds|excavat|funde|grabung/i; let found=0;
+  for(let i=1;i<parts.length-1;i+=2){const body=parts[i+1].trim(); if(want.test(parts[i])&&body.length>40){found++;
+    h+='<div><p class="eyebrow">'+esc(parts[i])+'</p><p class="txt">'+esc(cut(body,1800))+'</p></div>'}}
+  if(!found)h+='<p class="note">Artykuł nie ma osobnej części o badaniach ani znaleziskach.</p>';
+  h+='<div class="links"><a target="_blank" rel="noopener" href="https://'+w.lang+'.wikipedia.org/wiki/'+encodeURIComponent(pg.title.replace(/ /g,'_'))+'">Cały artykuł</a></div>';
+  box().innerHTML=h;
+}
+
+/* ================= WARSTWA 1b: rejestr zabytków archeologicznych (usługa WMS NID) ================= */
+const NID='https://usluga.zabytek.gov.pl/INSPIRE_AMD/service.svc/get';
+let nidLayer=null, nidCfg=null;
+function probe(layers,srs){
+  return new Promise(res=>{
+    const bbox=srs==='EPSG:3857'?'1558000,6275000,2690000,7330000':'14,49,24.2,55';
+    const img=new Image(); const t=setTimeout(()=>res(false),12000);
+    img.onload=()=>{clearTimeout(t);res(img.naturalWidth>1)}; img.onerror=()=>{clearTimeout(t);res(false)};
+    img.src=NID+'?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS='+encodeURIComponent(layers)+'&STYLES=&FORMAT=image/png&TRANSPARENT=TRUE&SRS='+srs+'&BBOX='+bbox+'&WIDTH=256&HEIGHT=256';
+  });
+}
+async function initNid(){
+  let names=[];
+  try{
+    const xml=await fetch(NID+'?SERVICE=WMS&REQUEST=GetCapabilities').then(r=>r.text());
+    const doc=new DOMParser().parseFromString(xml,'text/xml');
+    doc.querySelectorAll('Layer').forEach(l=>{const kids=[...l.children];
+      if(!kids.some(k=>k.tagName==='Layer')){const n=kids.find(k=>k.tagName==='Name');if(n&&n.textContent.trim())names.push(n.textContent.trim())}});
+  }catch(e){}
+  const cands=[]; if(names.length){cands.push(names.join(','));names.forEach(n=>cands.push(n))}
+  ['PS.ProtectedSite','PS.ProtectedSites','PS.ProtectedSitesArchaeologicalMonument','0','1'].forEach(n=>{if(!cands.includes(n))cands.push(n)});
+  outer:for(const layers of cands.slice(0,8))for(const srs of ['EPSG:3857','EPSG:4326']){
+    if(await probe(layers,srs)){nidCfg={layers,srs};break outer}
+  }
+  if(!nidCfg){$('stNid').className='state warn';$('stNid').textContent='Usługa NID nie odpowiada. Warstwa rejestru jest teraz niedostępna.';return}
+  nidLayer=L.tileLayer.wms(NID,{layers:nidCfg.layers,format:'image/png',transparent:true,version:'1.1.1',opacity:.75,maxZoom:20,
+    crs:nidCfg.srs==='EPSG:4326'?L.CRS.EPSG4326:L.CRS.EPSG3857,attribution:'Rejestr zabytków © NID'});
+  $('stNid').className='state ok';$('stNid').textContent='Połączono z usługą NID.';
+  if($('chkNid').checked)nidLayer.addTo(map);
+}
+async function nidInfo(e){
+  if(!nidLayer||!map.hasLayer(nidLayer))return;
+  const b=map.getBounds(), sz=map.getSize(), p=map.latLngToContainerPoint(e.latlng); let bbox;
+  if(nidCfg.srs==='EPSG:3857'){const a=L.CRS.EPSG3857.project(b.getSouthWest()),c=L.CRS.EPSG3857.project(b.getNorthEast());bbox=[a.x,a.y,c.x,c.y].join(',')}
+  else bbox=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].join(',');
+  const base=NID+'?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS='+encodeURIComponent(nidCfg.layers)+'&QUERY_LAYERS='+encodeURIComponent(nidCfg.layers)+
+    '&STYLES=&SRS='+nidCfg.srs+'&BBOX='+bbox+'&WIDTH='+sz.x+'&HEIGHT='+sz.y+'&X='+Math.round(p.x)+'&Y='+Math.round(p.y)+'&FEATURE_COUNT=5&INFO_FORMAT=';
+  for(const fmt of ['text/html','text/xml','text/plain']){
+    let txt; try{const r=await fetch(base+encodeURIComponent(fmt));if(!r.ok)continue;txt=await r.text()}catch(err){return}
+    if(!txt||/ServiceException/i.test(txt))continue;
+    const rows=parseInfo(txt,fmt); if(!rows.length)return;
+    const nameRow=rows.find(r=>/nazwa|name|obiekt/i.test(r[0]));
+    showCard(nameRow?nameRow[1]:'Zabytek archeologiczny w rejestrze',
+      '<div class="chips"><span class="chip reg">rejestr zabytków</span></div>'+
+      '<table class="kv">'+rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td></tr>').join('')+'</table>'+
+      '<p class="note">Teren zabytku wpisanego do rejestru. Poszukiwania w tym miejscu wymagają pozwolenia wojewódzkiego konserwatora zabytków.</p>'+
+      '<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+e.latlng.lat+','+e.latlng.lng+'">Prowadź</a></div>');
+    return;
+  }
+}
+function parseInfo(txt,fmt){
+  const rows=[], seen=new Set(), add=(k,v)=>{k=(k||'').trim();v=(v||'').trim();if(k&&v&&v!=='Null'&&!seen.has(k+v)&&rows.length<40){seen.add(k+v);rows.push([k,v])}};
+  if(fmt==='text/plain'){txt.split(/\n/).forEach(l=>{const m=l.match(/^\s*([^=:]+?)\s*[=:]\s*(.+)$/);if(m)add(m[1],m[2].replace(/^'|'$/g,''))});return rows}
+  const doc=new DOMParser().parseFromString(txt,fmt==='text/html'?'text/html':'text/xml');
+  if(fmt==='text/html'){
+    doc.querySelectorAll('table').forEach(tb=>{const tr=[...tb.querySelectorAll('tr')];if(tr.length<2)return;
+      const head=[...tr[0].children].map(c=>c.textContent);
+      if(tr[0].querySelector('th')&&head.length>2)tr.slice(1).forEach(r=>[...r.children].forEach((c,i)=>add(head[i],c.textContent)));
+      else tr.forEach(r=>{if(r.children.length===2)add(r.children[0].textContent,r.children[1].textContent)})});
+    return rows;
+  }
+  doc.querySelectorAll('*').forEach(el=>{
+    if(!el.children.length&&el.textContent.trim())add(el.localName,el.textContent);
+    [...el.attributes].forEach(a=>{if(!/^xmlns|schemaLocation|version/i.test(a.name)&&!/^(FIELDS|FeatureInfoResponse)$/i.test(a.name))add(a.name,a.value)});
+  });
+  return rows.filter(r=>!/^(shape|objectid|geometry|fid)/i.test(r[0]));
+}
+map.on('click',e=>{if(!$('layers').hidden||!$('card').hidden){closeSheets();return}nidInfo(e)});
+
+/* ---------- przełączniki warstw ---------- */
+$('chkOsm').checked=store.get('osm',true); $('chkNid').checked=store.get('nid',true);
+function applyOsm(){if($('chkOsm').checked){osmGroup.addTo(map);loadSites()}else{map.removeLayer(osmGroup);refreshStatus()}store.set('osm',$('chkOsm').checked)}
+$('chkOsm').addEventListener('change',applyOsm);
+$('chkNid').addEventListener('change',()=>{store.set('nid',$('chkNid').checked);if(!nidLayer)return;$('chkNid').checked?nidLayer.addTo(map):map.removeLayer(nidLayer)});
+applyOsm(); initNid();
+})();
+</script>
+</body>
+</html>
