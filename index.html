@@ -10,7 +10,7 @@
 /* Układ: mapa na cały ekran, wąska belka u góry, panel warstw i karta stanowiska wysuwane od dołu (obsługa kciukiem). */
 :root{
   --bg:#f3f1ea; --surface:#fbfaf6; --ink:#1d2420; --muted:#5d665f; --line:#d5d2c4;
-  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#8a5a2b; --mill:#7b2cbf; --zea:#c2185b; --inn:#2e9e3e; --inn-line:#0f3d17; --gold:#1d4ed8; --gold-line:#ffffff; --ok:#2f6b3c; --warn:#9a5b00;
+  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#8a5a2b; --mill:#7b2cbf; --zea:#c2185b; --inn:#2e9e3e; --inn-line:#0f3d17; --castle:#111111; --gold:#1d4ed8; --gold-line:#ffffff; --ok:#2f6b3c; --warn:#9a5b00;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --shadow:0 6px 24px rgba(20,25,20,.22);
@@ -97,6 +97,11 @@ table.kv td:first-child{color:var(--muted);width:38%}
 .dot.inn{background:var(--inn);box-shadow:0 0 0 2px var(--inn-line)}
 .dot.inn.faint{opacity:.6}
 .chip.inn{border-color:var(--inn);background:var(--inn);color:#fff;font-weight:600}
+.dot.castle{background:#111;box-shadow:0 0 0 2px #fff,0 0 0 3px #111}
+.dot.castle.ring{background:#fff;box-shadow:0 0 0 3px #111 inset,0 0 0 1px #111}
+.chip.castle{border-color:#111;background:#111;color:#fff;font-weight:600}
+.me-icon{width:22px;height:22px;border-radius:50%;background:#fff;border:4px solid #e11d48;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.4);display:grid;place-items:center}
+.me-icon::after{content:"";width:6px;height:6px;border-radius:50%;background:#111}
 .dot.lidar{border-radius:3px;background:linear-gradient(135deg,#eee,#777);box-shadow:0 0 0 1px var(--line)}
 .row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -132,6 +137,7 @@ table.kv td:first-child{color:var(--muted);width:38%}
   <button class="qc" type="button" data-chk="chkZea"><span class="dot zea"></span><span>ZABYTKI.PL</span></button>
   <button class="qc" type="button" data-chk="chkGold"><span class="dot gold"></span><span>Skarby</span></button>
   <button class="qc" type="button" data-chk="chkInn"><span class="dot inn"></span><span>Karczmy</span></button>
+  <button class="qc" type="button" data-chk="chkCastle"><span class="dot castle"></span><span>Pałace i zamki</span></button>
   <button class="qc" type="button" data-chk="chkRoads"><span class="sw-road"></span><span>Trakty</span></button>
   <button class="qc" type="button" data-chk="chkLidar"><span class="sw-lidar"></span><span>LIDAR</span></button>
   <button class="qc" type="button" data-chk="chkWater"><span class="dot mill"></span><span>Młyny</span></button>
@@ -184,6 +190,13 @@ table.kv td:first-child{color:var(--muted);width:38%}
         <span class="lab">Dawne karczmy, zajazdy i austerie<small>Miejscowości z karczmą według Wikipedii, zabytkowe budynki karczm i miejsca z „Karczma” w nazwie z OpenStreetMap. Widoczne po przybliżeniu mapy.</small>
         <span class="state" id="stInn"></span></span>
         <input type="checkbox" id="chkInn" checked></label>
+    </div>
+    <div class="group">
+      <p class="eyebrow">7 · Pałace i zamki</p>
+      <label class="row"><span class="dot castle"></span>
+        <span class="lab">Pałace, zamki i dwory<small>Z OpenStreetMap, także ruiny i zniszczone. Większa kropka to zamek, średnia pałac, mała dwór; biały środek oznacza ruinę. Widoczne po przybliżeniu mapy.</small>
+        <span class="state" id="stCastle"></span></span>
+        <input type="checkbox" id="chkCastle" checked></label>
     </div>
     <div class="group">
       <p class="eyebrow">2 · Dawne szlaki (XVI–XIX w.)</p>
@@ -266,8 +279,8 @@ $('btnLocate').addEventListener('click',()=>{
   navigator.geolocation.getCurrentPosition(p=>{
     const ll=[p.coords.latitude,p.coords.longitude];
     if(meMarker){map.removeLayer(meMarker);map.removeLayer(meCircle)}
-    meCircle=L.circle(ll,{radius:p.coords.accuracy,color:'#111',weight:1,dashArray:'4 4',fillColor:'#111',fillOpacity:.08,interactive:false}).addTo(map);
-    meMarker=L.circleMarker(ll,{radius:7,color:'#fff',weight:3,fillColor:'#111',fillOpacity:1,interactive:false}).addTo(map);
+    meCircle=L.circle(ll,{radius:p.coords.accuracy,color:'#e11d48',weight:1,dashArray:'4 4',fillColor:'#e11d48',fillOpacity:.06,interactive:false}).addTo(map);
+    meMarker=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="me-icon"></div>',iconSize:[22,22],iconAnchor:[11,11]}),interactive:false,keyboard:false,zIndexOffset:1000}).addTo(map);
     map.setView(ll,Math.max(map.getZoom(),15));
   },err=>{status(err.code===1?'Brak zgody na lokalizację. Strona musi być otwarta z adresu https, żeby telefon podał pozycję.':'Nie udało się ustalić pozycji. Spróbuj ponownie pod gołym niebem.')},
   {enableHighAccuracy:true,timeout:15000,maximumAge:5000});
@@ -656,6 +669,40 @@ Promise.allSettled(['data/karczmy_wiki.json','data/karczmy_osm.json'].map(u=>fet
   gate(); refreshStatus(); if(!$('summary').hidden)renderSummary();
 });
 
+
+/* ================= WARSTWA 7: pałace i zamki ================= */
+const castleGroup=L.layerGroup(); const castles=[];
+const CASTK={zamek:'zamek',palac:'pałac',dwor:'dwór'};
+const CTYPE={defensive:'warowny',fortress:'twierdza',palace:'pałac',stately:'rezydencja',manor:'dwór',castrum:'castrum',burgruine:'ruina'};
+function isRuin(t){return t.ruins==='yes'||!!t['ruins:historic']||/ruin/i.test(t.castle_type||'')}
+function openCastle(c){
+  const t=c.tags||{}, k=t.kind; openKey=c.type+'/'+c.id;
+  const chips=['<span class="chip castle">'+CASTK[k]+'</span>'];
+  if(isRuin(t))chips.push('<span class="chip">ruina</span>');
+  if(t.castle_type&&CTYPE[t.castle_type]&&CTYPE[t.castle_type]!==CASTK[k])chips.push('<span class="chip">'+CTYPE[t.castle_type]+'</span>');
+  const y=String(t.start_date||t.construction_date||''); if(y)chips.push('<span class="chip">'+esc(y)+'</span>');
+  if(t.heritage)chips.push('<span class="chip">zabytek</span>');
+  let h='<div class="chips">'+chips.join('')+'</div>';
+  const d=t['description:pl']||t.description; if(d)h+='<p class="txt">'+esc(d)+'</p>';
+  if(t.wikipedia||t['wikipedia:pl']||t.wikidata)h+='<div id="wiki"><p class="note">Szukam opisu w Wikipedii…</p></div>';
+  h+='<p class="note">Okolice dawnych rezydencji (dawne ogrody, folwarki, drogi dojazdowe) to tereny dawnego życia codziennego. Teren przy zabytku zwykle jest objęty ochroną konserwatorską i bywa własnością prywatną.</p>';
+  h+='<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+c.lat+','+c.lon+'">Prowadź</a>'+
+     '<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/'+c.type+'/'+c.id+'">Źródło w OSM</a></div>'+
+     '<p class="note">'+c.lat.toFixed(5)+', '+c.lon.toFixed(5)+'</p>';
+  showCard(t.name||('Bez nazwy – '+CASTK[k]),h);
+  if($('wiki'))loadWiki({key:openKey,t}).catch(()=>{if($('wiki'))$('wiki').innerHTML=''});
+}
+fetch('data/palace_zamki.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(d=>{
+  d.elements.forEach(c=>{
+    const t=c.tags||{}, ruin=isRuin(t), r=t.kind==='zamek'?9:t.kind==='palac'?7.5:6;
+    const m=L.circleMarker([c.lat,c.lon],{radius:r,color:ruin?'#111':'#fff',weight:ruin?4:2,fillColor:ruin?'#fff':'#111',fillOpacity:1,bubblingMouseEvents:false});
+    m.on('click',()=>openCastle(c)); m.addTo(castleGroup); castles.push({c,m,k:t.kind,ruin});
+  });
+  const n={zamek:0,palac:0,dwor:0}; castles.forEach(v=>n[v.k]++);
+  $('stCastle').className='state ok'; $('stCastle').textContent=n.zamek+' zamków, '+n.palac+' pałaców, '+n.dwor+' dworów, dane z '+d.generated.split('-').reverse().join('.')+'.';
+  gate(); if(!$('summary').hidden)renderSummary();
+}).catch(()=>{$('stCastle').className='state warn';$('stCastle').textContent='Lista pałaców i zamków jest jeszcze przygotowywana. Spróbuj za kilka minut.'});
+
 /* ---------- podsumowanie: ile obiektów każdej warstwy w widoku i w całej Polsce ---------- */
 const fmt=n=>n.toLocaleString('pl-PL');
 function roadKm(r,b){let km=0;for(let i=1;i<r.towns.length;i++){const a=TOWNS[r.towns[i-1]],c=TOWNS[r.towns[i]];if(!a||!c)continue;
@@ -680,6 +727,8 @@ function renderSummary(){
     row('<span class="dot"></span>','Stanowiska archeologiczne',view(sIn),pl(sAll))+subs(sg,true)+
     row('<span class="sw-area"></span>','Zabytki w rejestrze NID','–','7 600+')+
     row('<span class="dot zea"></span>','ZABYTKI.PL (ewidencja)','–','–')+
+    row('<span class="dot castle"></span>','Pałace i zamki',view(castles.filter(v=>vb.contains(v.m.getLatLng())).length),fmt(castles.length))+
+    (()=>{const g={all:{},inv:{}};castles.forEach(v=>{const k=CASTK[v.k]+(v.ruin?' (ruina)':'');g.all[k]=(g.all[k]||0)+1;if(vb.contains(v.m.getLatLng()))g.inv[k]=(g.inv[k]||0)+1});return subs(g)})()+
     row('<span class="dot inn"></span>','Karczmy',view(inns.filter(v=>vb.contains(v.m.getLatLng())).length),fmt(inns.length))+
     (()=>{const g={all:{},inv:{}};inns.forEach(v=>{const k=INNK[v.x.k];g.all[k]=(g.all[k]||0)+1;if(vb.contains(v.m.getLatLng()))g.inv[k]=(g.inv[k]||0)+1});return subs(g)})()+
     row('<span class="dot gold"></span>','Skarby',fmt(golds.filter(x=>vb.contains(x.m.getLatLng())).length),fmt(golds.length))+
@@ -703,6 +752,7 @@ function gate(){
   const z=map.getZoom()>=OSM_MIN_ZOOM, tog=(g,on)=>{if(on&&!map.hasLayer(g))g.addTo(map);if(!on&&map.hasLayer(g))map.removeLayer(g)};
   tog(osmGroup,$('chkOsm').checked&&z);
   tog(innGroup,$('chkInn').checked&&z);
+  tog(castleGroup,$('chkCastle').checked&&z);
   tog(millGroups.water,$('chkWater').checked&&z); tog(millGroups.wind,$('chkWind').checked&&z);
 }
 map.on('zoomend',gate);
@@ -715,6 +765,8 @@ $('chkZea').addEventListener('change',applyZea); applyZea();
 $('chkGold').checked=store.get('gold',true);
 function applyGold(){$('chkGold').checked?goldGroup.addTo(map):map.removeLayer(goldGroup);store.set('gold',$('chkGold').checked)}
 $('chkGold').addEventListener('change',applyGold); applyGold();
+$('chkCastle').checked=store.get('castle',true);
+$('chkCastle').addEventListener('change',()=>{store.set('castle',$('chkCastle').checked);gate()});
 $('chkInn').checked=store.get('inn',true);
 $('chkInn').addEventListener('change',()=>{store.set('inn',$('chkInn').checked);gate()});
 $('chkRoads').checked=store.get('roads',true); $('chkLidar').checked=store.get('lidar',false);

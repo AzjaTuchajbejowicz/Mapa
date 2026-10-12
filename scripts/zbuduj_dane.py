@@ -6,7 +6,7 @@ KEEP = {"name", "name:pl", "alt_name", "site_type", "archaeological_site", "fort
         "historic:civilization", "historic:period", "historic:era", "start_date", "construction_date",
         "description", "description:pl", "note", "note:pl", "wikipedia", "wikipedia:pl", "wikidata",
         "heritage", "heritage:operator", "ref:nid", "man_made", "building", "historic:building", "ruins",
-        "windmill:type", "windmill_type"}
+        "windmill:type", "windmill_type", "castle_type", "ruins:historic", "architect"}
 PREFIXES = ("disused:", "abandoned:", "ruins:", "demolished:", "was:", "razed:", "destroyed:")
 MILL = {"watermill", "windmill", "mill"}
 
@@ -44,7 +44,23 @@ def inn_kind(t):
     return None
 
 
-sites, mills, inns, seen = [], [], [], set()
+CASTLE_NAME = __import__("re").compile(r"pałac|zam[eo]k|dw[oó]r|kasztel", __import__("re").I)
+
+
+def castle_kind(t):
+    """Pałac, zamek albo dwór (także ruiny) według tagów OpenStreetMap."""
+    hist, bld, ct = t.get("historic", ""), t.get("building", ""), t.get("castle_type", "")
+    if not (hist in ("castle", "manor", "palace") or bld in ("castle", "palace") or t.get("ruins:historic") in ("castle", "manor", "palace")):
+        return None
+    name = t.get("name", "")
+    if ct in ("palace", "stately") or bld == "palace" or hist == "palace" or __import__("re").search(r"pałac", name, __import__("re").I):
+        return "palac"
+    if ct == "manor" or hist == "manor" or __import__("re").search(r"dw[oó]r|dworek", name, __import__("re").I):
+        return "dwor"
+    return "zamek"
+
+
+sites, mills, inns, castles, seen = [], [], [], [], set()
 with open(sys.argv[1], encoding="utf-8") as f:
     for line in f:
         line = line.strip().lstrip("\x1e")
@@ -67,6 +83,11 @@ with open(sys.argv[1], encoding="utf-8") as f:
             sites.append(el); seen.add((typ, oid))
         elif is_mill(pr):
             mills.append(el); seen.add((typ, oid))
+        elif castle_kind(pr):
+            el["tags"]["kind"] = castle_kind(pr)
+            for k in ("historic", "heritage", "ruins"):
+                if pr.get(k): el["tags"][k] = pr[k]
+            castles.append(el); seen.add((typ, oid))
         elif inn_kind(pr):
             el["tags"]["kind"] = inn_kind(pr)
             for k in ("place", "old_name", "heritage", "historic"):
@@ -75,7 +96,7 @@ with open(sys.argv[1], encoding="utf-8") as f:
 
 today = datetime.date.today().isoformat()
 minimum = int(sys.argv[2]) if len(sys.argv) > 2 else 100
-for name, items in (("stanowiska", sites), ("mlyny", mills), ("karczmy_osm", inns)):
+for name, items in (("stanowiska", sites), ("mlyny", mills), ("karczmy_osm", inns), ("palace_zamki", castles)):
     if len(items) < (minimum if name != "karczmy_osm" else min(minimum, 10)):
         raise SystemExit(f"Podejrzanie mało obiektów w {name}: {len(items)}")
     with open(f"data/{name}.json", "w", encoding="utf-8") as f:

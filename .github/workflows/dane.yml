@@ -34,7 +34,7 @@ jobs:
           for P in "" disused: abandoned: ruins: demolished: was: razed: destroyed:; do
             for K in man_made building; do E="$E nwr/${P}${K}=watermill,windmill,mill"; done
           done
-          osmium tags-filter polska.osm.pbf nwr/historic nwr/heritage nwr/place nwr/building=inn $E -o wybrane.osm.pbf
+          osmium tags-filter polska.osm.pbf nwr/historic nwr/heritage nwr/place nwr/building=inn,castle,palace nwr/ruins:historic $E -o wybrane.osm.pbf
           osmium export wybrane.osm.pbf -f geojsonseq -a type,id --geometry-types=point,linestring,polygon -o wybrane.geojsonseq
           mkdir -p data
           python3 scripts/zbuduj_dane.py wybrane.geojsonseq
