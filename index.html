@@ -38,6 +38,16 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px;
   font:600 15px/1 var(--display);letter-spacing:.06em;text-transform:uppercase}
 .bar .btn{padding:9px 11px}
+@media (max-width:440px){.bar h1{font-size:0;flex:1}.bar h1::before{content:'Mapa';font-size:19px}}
+.sumt{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.sumt th{white-space:nowrap;font:600 12px/1 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:right;padding:0 0 8px 8px}
+.sumt th:first-child{text-align:left;padding-left:0}
+.sumt td{white-space:nowrap;border-top:1px solid var(--line);padding:9px 0 9px 8px;text-align:right;vertical-align:middle}
+.sumt td:first-child{text-align:left;padding-left:0;white-space:normal}
+.sumt td .lb{display:flex;align-items:center;gap:10px}
+.sumt td b{font:700 18px/1 var(--display)}
+.sumt tr.sub td{border-top:0;padding-top:2px;padding-bottom:4px;font-size:13px;color:var(--muted)}
+.sumt tr.sub td:first-child{padding-left:32px}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 
 .fab{position:fixed;z-index:900;right:12px;bottom:calc(46px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:50%;
@@ -105,6 +115,7 @@ table.kv td:first-child{color:var(--muted);width:38%}
 
 <div class="bar">
   <h1>Mapa detektorysty</h1>
+  <button class="btn" id="btnSum" type="button">Podsumowanie</button>
   <button class="btn primary" id="btnLayers" type="button">Warstwy</button>
 </div>
 
@@ -167,6 +178,11 @@ table.kv td:first-child{color:var(--muted);width:38%}
   </div>
 </section>
 
+<section class="sheet" id="summary" hidden aria-label="Podsumowanie">
+  <header><h2>Podsumowanie</h2><button class="x" type="button" data-close="summary" aria-label="Zamknij">×</button></header>
+  <div class="body"><div id="sumBody"></div></div>
+</section>
+
 <section class="sheet" id="card" hidden aria-label="Stanowisko">
   <header><h2 id="cardTitle"></h2><button class="x" type="button" data-close="card" aria-label="Zamknij">×</button></header>
   <div class="body" id="cardBody"></div>
@@ -202,11 +218,12 @@ setBase(baseName);
 $('baseSeg').addEventListener('click',e=>{const b=e.target.closest('button[data-base]');if(b)setBase(b.dataset.base)});
 
 /* ---------- panele ---------- */
-const SHEETS=['layers','card'];
+const SHEETS=['layers','card','summary'];
 function openSheet(id){SHEETS.forEach(s=>{$(s).hidden=s!==id})}
 function closeSheets(){SHEETS.forEach(s=>{$(s).hidden=true})}
 function anyOpen(){return SHEETS.some(s=>!$(s).hidden)}
 $('btnLayers').addEventListener('click',()=>{$('layers').hidden?openSheet('layers'):closeSheets()});
+$('btnSum').addEventListener('click',()=>{if($('summary').hidden){renderSummary();openSheet('summary')}else closeSheets()});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-close]');if(b)$(b.dataset.close).hidden=true});
 function showCard(title,html){$('cardTitle').textContent=title;$('cardBody').innerHTML=html;$('cardBody').scrollTop=0;openSheet('card')}
 
@@ -244,7 +261,7 @@ function addSite(el){
   const t=el.tags||{};
   const m=L.circleMarker([lat,lon],{radius:8,color:css('--surface')||'#fff',weight:2,fillColor:css('--site')||'#c26a00',fillOpacity:.95,bubblingMouseEvents:false});
   m.on('click',()=>openSite({key,lat,lon,t}));
-  m.addTo(osmGroup); sites.set(key,m);
+  m.kind=siteType(t)||'inne'; m.addTo(osmGroup); sites.set(key,m);
 }
 async function overpass(q){
   let last;
@@ -468,7 +485,7 @@ function addMill(el){
           :{radius:7,color:col,weight:4,fillColor:surf,fillOpacity:1};
   const m=L.circleMarker([lat,lon],Object.assign(st,{bubblingMouseEvents:false}));
   m.on('click',()=>openMill({key,lat,lon,t,k,y,life}));
-  m.addTo(millGroups[k]); mills.set(key,{m,k});
+  m.addTo(millGroups[k]); mills.set(key,{m,k,life:life||'zachowany'});
 }
 function millsOn(){return Object.values(millGroups).some(g=>map.hasLayer(g))}
 async function loadMills(){
@@ -506,6 +523,44 @@ function openMill(s){
   if($('wiki'))loadWiki(s).catch(()=>{if(openKey===s.key&&$('wiki'))$('wiki').innerHTML='<p class="note">Nie udało się pobrać opisu z Wikipedii.</p>'});
 }
 
+
+/* ---------- podsumowanie: ile obiektów każdej warstwy w widoku i w całej Polsce ---------- */
+const fmt=n=>n.toLocaleString('pl-PL');
+function roadKm(r,b){let km=0;for(let i=1;i<r.towns.length;i++){const a=TOWNS[r.towns[i-1]],c=TOWNS[r.towns[i]];if(!a||!c)continue;
+  if(!b||b.contains(a)||b.contains(c))km+=map.distance(a,c)/1000}return km}
+function renderSummary(){
+  const vb=map.getBounds(), zoomOk=map.getZoom()>=OSM_MIN_ZOOM;
+  const view=n=>zoomOk?fmt(n):'–';
+  const groupCount=(entries,keyFn)=>{const all={},inv={};entries.forEach(([k,ll])=>{all[k]=(all[k]||0)+1;if(vb.contains(ll))inv[k]=(inv[k]||0)+1});return{all,inv}};
+  // stanowiska wg typu
+  const se=[...sites.values()].map(m=>[m.kind,m.getLatLng()]);
+  const sg=groupCount(se); const sAll=se.length, sIn=se.filter(e=>vb.contains(e[1])).length;
+  // młyny wg rodzaju i stanu
+  const me=[...mills.values()];
+  const mc=k=>{const l=me.filter(v=>v.k===k);const g=groupCount(l.map(v=>[v.life,v.m.getLatLng()]));return{all:l.length,inv:l.filter(v=>vb.contains(v.m.getLatLng())).length,g}};
+  const W=mc('water'), V=mc('wind');
+  const rIn=ROADS.filter(r=>r.towns.some(t=>TOWNS[t]&&vb.contains(TOWNS[t]))).length;
+  const kmAll=ROADS.reduce((a,r)=>a+roadKm(r),0), kmIn=ROADS.reduce((a,r)=>a+roadKm(r,vb),0);
+  const pl=STATIC===true?(n=>fmt(n)):(n=>'<span title="tylko wczytane obszary">'+fmt(n)+'*</span>');
+  const subs=(g,all)=>Object.entries(g.all).sort((a,b)=>b[1]-a[1]).slice(0,all?8:6).map(([k,n])=>'<tr class="sub"><td>'+esc(k)+'</td><td>'+view(g.inv[k]||0)+'</td><td>'+pl(n)+'</td></tr>').join('');
+  const row=(sw,label,inv,all)=>'<tr><td><span class="lb">'+sw+'<span>'+label+'</span></span></td><td><b>'+inv+'</b></td><td><b>'+all+'</b></td></tr>';
+  let h='<table class="sumt"><thead><tr><th>Warstwa</th><th>W widoku</th><th>W Polsce</th></tr></thead><tbody>'+
+    row('<span class="dot"></span>','Stanowiska archeologiczne',view(sIn),pl(sAll))+subs(sg,true)+
+    row('<span class="sw-area"></span>','Zabytki w rejestrze NID','–','7 600+')+
+    row('<span class="sw-road"></span>','Dawne trakty',fmt(rIn),fmt(ROADS.length))+
+    '<tr class="sub"><td>długość w km</td><td>'+fmt(Math.round(kmIn))+'</td><td>'+fmt(Math.round(kmAll))+'</td></tr>'+
+    row('<span class="dot mill"></span>','Młyny wodne',view(W.inv),pl(W.all))+subs(W.g)+
+    row('<span class="dot mill ring"></span>','Wiatraki',view(V.inv),pl(V.all))+subs(V.g)+
+    '</tbody></table>';
+  const notes=[];
+  if(!zoomOk)notes.push('Przybliż mapę, żeby policzyć obiekty w widoku.');
+  if(STATIC!==true)notes.push('* Dane dla całej Polski jeszcze się pobierają, więc liczby obejmują tylko obszary, które już oglądałeś.');
+  notes.push('Liczby zabytków z rejestru NID nie da się odczytać z mapy dla wybranego obszaru. Łączna liczba pochodzi z opisu zbioru NID.');
+  h+=notes.map(n=>'<p class="note">'+n+'</p>').join('');
+  $('sumBody').innerHTML=h;
+}
+map.on('moveend',()=>{if(!$('summary').hidden)renderSummary()});
+
 /* ---------- przełączniki warstw ---------- */
 $('chkOsm').checked=store.get('osm',true); $('chkNid').checked=store.get('nid',true);
 function gate(){
@@ -538,7 +593,7 @@ applyRoads(); applyLidar(); applyOsm(); initNid();
     const n={water:0,wind:0}; mills.forEach(v=>n[v.k]++);
     $('stMill').className='state ok'; $('stMill').textContent=n.water+' młynów wodnych i '+n.wind+' wiatraków w całej Polsce, dane z '+d+'.';
   }catch(e){STATIC=false; loadSites(); loadMills()}
-  gate(); refreshStatus();
+  gate(); refreshStatus(); if(!$('summary').hidden)renderSummary();
 })();
 /* pasek szybkich przełączników: każdy guzik steruje tym samym polem co panel Warstwy */
 const qcs=[...document.querySelectorAll('#quick .qc')];
