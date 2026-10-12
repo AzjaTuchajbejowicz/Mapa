@@ -29,7 +29,22 @@ def is_mill(t):
     return t.get("historic") in MILL
 
 
-sites, mills, seen = [], [], set()
+INN = __import__("re").compile(r"karczm|austeri|zajazd|krczm|kretscham|krug\b", __import__("re").I)
+
+
+def inn_kind(t):
+    """Zabytkowa karczma (budynek) albo miejsce, którego nazwa pochodzi od karczmy."""
+    name = " ".join(t.get(k, "") for k in ("name", "name:pl", "old_name", "alt_name", "historic:name"))
+    if not INN.search(name) and t.get("building") != "inn" and t.get("historic") != "inn":
+        return None
+    if t.get("place"):
+        return "place"
+    if t.get("historic") or t.get("heritage") or t.get("building") == "inn":
+        return "building"
+    return None
+
+
+sites, mills, inns, seen = [], [], [], set()
 with open(sys.argv[1], encoding="utf-8") as f:
     for line in f:
         line = line.strip().lstrip("\x1e")
@@ -52,11 +67,16 @@ with open(sys.argv[1], encoding="utf-8") as f:
             sites.append(el); seen.add((typ, oid))
         elif is_mill(pr):
             mills.append(el); seen.add((typ, oid))
+        elif inn_kind(pr):
+            el["tags"]["kind"] = inn_kind(pr)
+            for k in ("place", "old_name", "heritage", "historic"):
+                if pr.get(k): el["tags"][k] = pr[k]
+            inns.append(el); seen.add((typ, oid))
 
 today = datetime.date.today().isoformat()
 minimum = int(sys.argv[2]) if len(sys.argv) > 2 else 100
-for name, items in (("stanowiska", sites), ("mlyny", mills)):
-    if len(items) < minimum:
+for name, items in (("stanowiska", sites), ("mlyny", mills), ("karczmy_osm", inns)):
+    if len(items) < (minimum if name != "karczmy_osm" else min(minimum, 10)):
         raise SystemExit(f"Podejrzanie mało obiektów w {name}: {len(items)}")
     with open(f"data/{name}.json", "w", encoding="utf-8") as f:
         json.dump({"generated": today, "count": len(items), "elements": items}, f, ensure_ascii=False, separators=(",", ":"))

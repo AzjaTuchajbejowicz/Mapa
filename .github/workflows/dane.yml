@@ -5,6 +5,7 @@ on:
     paths:
       - scripts/zbuduj_dane.py
       - scripts/skarby.py
+      - scripts/karczmy.py
       - .github/workflows/dane.yml
   schedule:
     - cron: "17 3 * * 1"   # w każdy poniedziałek rano
@@ -33,13 +34,16 @@ jobs:
           for P in "" disused: abandoned: ruins: demolished: was: razed: destroyed:; do
             for K in man_made building; do E="$E nwr/${P}${K}=watermill,windmill,mill"; done
           done
-          osmium tags-filter polska.osm.pbf nwr/historic=archaeological_site,tumulus,watermill,windmill,mill $E -o wybrane.osm.pbf
+          osmium tags-filter polska.osm.pbf nwr/historic nwr/heritage nwr/place nwr/building=inn $E -o wybrane.osm.pbf
           osmium export wybrane.osm.pbf -f geojsonseq -a type,id --geometry-types=point,linestring,polygon -o wybrane.geojsonseq
           mkdir -p data
           python3 scripts/zbuduj_dane.py wybrane.geojsonseq
       - name: Zbierz udokumentowane skarby (Wikipedia, Wikidata)
         continue-on-error: true
         run: python3 scripts/skarby.py
+      - name: Zbierz karczmy z Wikipedii
+        continue-on-error: true
+        run: python3 scripts/karczmy.py
       - name: Zapisz zmiany
         run: |
           git config user.name "github-actions[bot]"

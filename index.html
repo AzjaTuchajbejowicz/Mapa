@@ -10,18 +10,18 @@
 /* Układ: mapa na cały ekran, wąska belka u góry, panel warstw i karta stanowiska wysuwane od dołu (obsługa kciukiem). */
 :root{
   --bg:#f3f1ea; --surface:#fbfaf6; --ink:#1d2420; --muted:#5d665f; --line:#d5d2c4;
-  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#8a5a2b; --mill:#7b2cbf; --zea:#00897b; --gold:#1d4ed8; --gold-line:#ffffff; --ok:#2f6b3c; --warn:#9a5b00;
+  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#8a5a2b; --mill:#7b2cbf; --zea:#c2185b; --inn:#2e9e3e; --inn-line:#0f3d17; --gold:#1d4ed8; --gold-line:#ffffff; --ok:#2f6b3c; --warn:#9a5b00;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --shadow:0 6px 24px rgba(20,25,20,.22);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#4dd0b8; --gold:#4f8cff; --gold-line:#0b1a3a; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#ff6fa8; --inn:#5fd47a; --inn-line:#06210c; --gold:#4f8cff; --gold-line:#0b1a3a; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#4dd0b8; --gold:#4f8cff; --gold-line:#0b1a3a; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#ff6fa8; --inn:#5fd47a; --inn-line:#06210c; --gold:#4f8cff; --gold-line:#0b1a3a; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -94,6 +94,9 @@ table.kv td:first-child{color:var(--muted);width:38%}
 .chip.zea{border-color:var(--zea);color:var(--zea);font-weight:600}
 .dot.gold{background:var(--gold);box-shadow:0 0 0 2px var(--gold-line),0 0 0 3px var(--gold)}
 .chip.gold{border-color:var(--gold);background:var(--gold);color:#fff;font-weight:600}
+.dot.inn{background:var(--inn);box-shadow:0 0 0 2px var(--inn-line)}
+.dot.inn.faint{opacity:.6}
+.chip.inn{border-color:var(--inn);background:var(--inn);color:#fff;font-weight:600}
 .dot.lidar{border-radius:3px;background:linear-gradient(135deg,#eee,#777);box-shadow:0 0 0 1px var(--line)}
 .row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -128,6 +131,7 @@ table.kv td:first-child{color:var(--muted);width:38%}
   <button class="qc" type="button" data-chk="chkNid"><span class="sw-area"></span><span>Rejestr NID</span></button>
   <button class="qc" type="button" data-chk="chkZea"><span class="dot zea"></span><span>ZABYTKI.PL</span></button>
   <button class="qc" type="button" data-chk="chkGold"><span class="dot gold"></span><span>Skarby</span></button>
+  <button class="qc" type="button" data-chk="chkInn"><span class="dot inn"></span><span>Karczmy</span></button>
   <button class="qc" type="button" data-chk="chkRoads"><span class="sw-road"></span><span>Trakty</span></button>
   <button class="qc" type="button" data-chk="chkLidar"><span class="sw-lidar"></span><span>LIDAR</span></button>
   <button class="qc" type="button" data-chk="chkWater"><span class="dot mill"></span><span>Młyny</span></button>
@@ -173,6 +177,13 @@ table.kv td:first-child{color:var(--muted);width:38%}
         <span class="lab">Udokumentowane znaleziska skarbów<small>Skarby monet, srebra, brązów i kosztowności opisane w Wikipedii i Wikidata. Dotknij punktu, żeby zobaczyć opis.</small>
         <span class="state" id="stGold"></span></span>
         <input type="checkbox" id="chkGold" checked></label>
+    </div>
+    <div class="group">
+      <p class="eyebrow">6 · Karczmy</p>
+      <label class="row"><span class="dot inn"></span>
+        <span class="lab">Dawne karczmy, zajazdy i austerie<small>Miejscowości z karczmą według Wikipedii, zabytkowe budynki karczm i miejsca z „Karczma” w nazwie z OpenStreetMap. Widoczne po przybliżeniu mapy.</small>
+        <span class="state" id="stInn"></span></span>
+        <input type="checkbox" id="chkInn" checked></label>
     </div>
     <div class="group">
       <p class="eyebrow">2 · Dawne szlaki (XVI–XIX w.)</p>
@@ -412,7 +423,7 @@ async function initNid(){
   if($('chkNid').checked)nidLayer.addTo(map);
 }
 const ZEA='https://usluga.zabytek.gov.pl/ZEA/service.svc/get', ZEAL='Ewidencja_zabytków_archeologicznych';
-const zeaLayer=new (RecolorWMS([0,137,123],[0,77,64],1))(ZEA,{layers:ZEAL,format:'image/png',transparent:true,version:'1.1.1',minZoom:11,maxZoom:20,zIndex:5,attribution:'Ewidencja zabytków archeologicznych © NID'});
+const zeaLayer=new (RecolorWMS([194,24,91],[120,10,60],1))(ZEA,{layers:ZEAL,format:'image/png',transparent:true,version:'1.1.1',minZoom:11,maxZoom:20,zIndex:5,attribution:'Ewidencja zabytków archeologicznych © NID'});
 zeaLayer.on('tileerror',()=>{$('stZea').className='state warn';$('stZea').textContent='Usługa NID nie odpowiada na części mapy. Przesuń mapę, żeby spróbować ponownie.'});
 zeaLayer.on('load',()=>{$('stZea').className='state ok';$('stZea').textContent='Połączono z usługą NID.'});
 /* Pyta usługę WMS o obiekty w małym oknie wokół dotkniętego punktu (ok. 8 px w każdą stronę). */
@@ -605,6 +616,46 @@ fetch('data/skarby.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error(r
   if(!$('summary').hidden)renderSummary();
 }).catch(()=>{$('stGold').className='state warn';$('stGold').textContent='Lista skarbów jest jeszcze przygotowywana. Spróbuj za kilka minut.'});
 
+
+/* ================= WARSTWA 6: karczmy ================= */
+const innGroup=L.layerGroup(); const inns=[];
+const INNK={wiki:'wzmianka w Wikipedii',building:'zabytkowy budynek',place:'nazwa po karczmie'};
+function openInn(x){
+  openKey='inn:'+x.id; const t=x.t||{};
+  let h='<div class="chips"><span class="chip inn">karczma</span><span class="chip">'+INNK[x.k]+'</span>'+(t.start_date?'<span class="chip">'+esc(t.start_date)+'</span>':'')+(t.heritage?'<span class="chip">zabytek</span>':'')+'</div>';
+  if(x.text)h+='<p class="txt">'+esc(x.text)+'</p>';
+  if(x.w)h+='<div id="innWiki"><p class="note">Szukam wzmianek o karczmie w Wikipedii…</p></div>';
+  h+='<p class="note">'+(x.k==='building'?'Punkt wskazuje budynek dawnej karczmy.':x.k==='place'?'Nazwa miejscowości lub jej części pochodzi zwykle od stojącej tu dawniej karczmy.':'Punkt wskazuje miejscowość. Karczma stała najczęściej przy drodze przez wieś, przy rozstajach, moście albo młynie.')+'</p>';
+  h+='<div class="links">'+(x.w?'<a target="_blank" rel="noopener" href="https://pl.wikipedia.org/wiki/'+encodeURIComponent(x.w.replace(/ /g,'_'))+'">Wikipedia</a>':'')+
+     (x.osm?'<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/'+esc(x.osm)+'">Źródło w OSM</a>':'')+
+     '<a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+x.lat+','+x.lon+'">Prowadź</a></div>'+
+     '<p class="note">'+x.lat.toFixed(5)+', '+x.lon.toFixed(5)+'</p>';
+  showCard(x.n,h);
+  if(!x.w)return;
+  fetch('https://pl.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&prop=extracts&explaintext=1&titles='+encodeURIComponent(x.w))
+   .then(r=>r.json()).then(j=>{
+     const box=openKey==='inn:'+x.id?$('innWiki'):null; if(!box)return;
+     const text=(Object.values(j.query.pages)[0].extract||'').replace(/\n=+[^=\n]+=+\n/g,'\n').replace(/\n+/g,' ');
+     const parts=text.split(/(?<=[.!?])\s+(?=[A-ZĄĆĘŁŃÓŚŹŻ0-9])/).filter(s=>/karczm|austeri|zajazd/i.test(s)).slice(0,5);
+     box.innerHTML=parts.length?'<div><p class="eyebrow">Z Wikipedii</p><p class="txt">'+esc(cut(parts.join('\n\n'),1600))+'</p></div>':'';
+   }).catch(()=>{const b=$('innWiki');if(b)b.innerHTML=''});
+}
+function addInn(x){
+  const col=css('--inn')||'#2e9e3e', line=css('--inn-line')||'#0f3d17';
+  const st=x.k==='building'?{radius:9,color:line,weight:3,fillColor:col,fillOpacity:1}:x.k==='place'?{radius:6,color:line,weight:1,fillColor:col,fillOpacity:.6}:{radius:7,color:'#fff',weight:2,fillColor:col,fillOpacity:1};
+  const m=L.circleMarker([x.lat,x.lon],Object.assign(st,{bubblingMouseEvents:false}));
+  m.on('click',()=>openInn(x)); m.addTo(innGroup); inns.push({x,m});
+}
+Promise.allSettled(['data/karczmy_wiki.json','data/karczmy_osm.json'].map(u=>fetch(u,{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}))).then(([w,o])=>{
+  let dt='';
+  if(w.status==='fulfilled'){w.value.elements.forEach((e,i)=>addInn({id:'w'+i,k:'wiki',n:e.n,lat:e.lat,lon:e.lon,text:e.t,w:e.w}));dt=w.value.generated}
+  if(o.status==='fulfilled'){o.value.elements.forEach(e=>{const t=e.tags||{};addInn({id:e.type+e.id,k:t.kind,n:t.name||t.old_name||'Karczma',lat:e.lat,lon:e.lon,t,osm:e.type+'/'+e.id,w:t['wikipedia:pl']||(t.wikipedia&&t.wikipedia.startsWith('pl:')?t.wikipedia.slice(3):'')})});dt=dt||o.value.generated}
+  if(!inns.length){$('stInn').className='state warn';$('stInn').textContent='Lista karczm jest jeszcze przygotowywana. Spróbuj za kilka minut.';return}
+  const n={wiki:0,building:0,place:0}; inns.forEach(v=>n[v.x.k]++);
+  $('stInn').className='state ok'; $('stInn').textContent=n.wiki+' miejscowości z karczmą, '+n.building+' budynków karczm, '+n.place+' nazw po karczmach, dane z '+dt.split('-').reverse().join('.')+'.';
+  gate(); refreshStatus(); if(!$('summary').hidden)renderSummary();
+});
+
 /* ---------- podsumowanie: ile obiektów każdej warstwy w widoku i w całej Polsce ---------- */
 const fmt=n=>n.toLocaleString('pl-PL');
 function roadKm(r,b){let km=0;for(let i=1;i<r.towns.length;i++){const a=TOWNS[r.towns[i-1]],c=TOWNS[r.towns[i]];if(!a||!c)continue;
@@ -629,6 +680,8 @@ function renderSummary(){
     row('<span class="dot"></span>','Stanowiska archeologiczne',view(sIn),pl(sAll))+subs(sg,true)+
     row('<span class="sw-area"></span>','Zabytki w rejestrze NID','–','7 600+')+
     row('<span class="dot zea"></span>','ZABYTKI.PL (ewidencja)','–','–')+
+    row('<span class="dot inn"></span>','Karczmy',view(inns.filter(v=>vb.contains(v.m.getLatLng())).length),fmt(inns.length))+
+    (()=>{const g={all:{},inv:{}};inns.forEach(v=>{const k=INNK[v.x.k];g.all[k]=(g.all[k]||0)+1;if(vb.contains(v.m.getLatLng()))g.inv[k]=(g.inv[k]||0)+1});return subs(g)})()+
     row('<span class="dot gold"></span>','Skarby',fmt(golds.filter(x=>vb.contains(x.m.getLatLng())).length),fmt(golds.length))+
     row('<span class="sw-road"></span>','Dawne trakty',fmt(rIn),fmt(ROADS.length))+
     '<tr class="sub"><td>długość w km</td><td>'+fmt(Math.round(kmIn))+'</td><td>'+fmt(Math.round(kmAll))+'</td></tr>'+
@@ -649,6 +702,7 @@ $('chkOsm').checked=store.get('osm',true); $('chkNid').checked=store.get('nid',t
 function gate(){
   const z=map.getZoom()>=OSM_MIN_ZOOM, tog=(g,on)=>{if(on&&!map.hasLayer(g))g.addTo(map);if(!on&&map.hasLayer(g))map.removeLayer(g)};
   tog(osmGroup,$('chkOsm').checked&&z);
+  tog(innGroup,$('chkInn').checked&&z);
   tog(millGroups.water,$('chkWater').checked&&z); tog(millGroups.wind,$('chkWind').checked&&z);
 }
 map.on('zoomend',gate);
@@ -661,6 +715,8 @@ $('chkZea').addEventListener('change',applyZea); applyZea();
 $('chkGold').checked=store.get('gold',true);
 function applyGold(){$('chkGold').checked?goldGroup.addTo(map):map.removeLayer(goldGroup);store.set('gold',$('chkGold').checked)}
 $('chkGold').addEventListener('change',applyGold); applyGold();
+$('chkInn').checked=store.get('inn',true);
+$('chkInn').addEventListener('change',()=>{store.set('inn',$('chkInn').checked);gate()});
 $('chkRoads').checked=store.get('roads',true); $('chkLidar').checked=store.get('lidar',false);
 function applyRoads(){$('chkRoads').checked?roadGroup.addTo(map):map.removeLayer(roadGroup);store.set('roads',$('chkRoads').checked)}
 function applyLidar(){if($('chkLidar').checked)lidar.addTo(map);else map.removeLayer(lidar);store.set('lidar',$('chkLidar').checked)}
