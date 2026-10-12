@@ -10,18 +10,18 @@
 /* Układ: mapa na cały ekran, wąska belka u góry, panel warstw i karta stanowiska wysuwane od dołu (obsługa kciukiem). */
 :root{
   --bg:#f3f1ea; --surface:#fbfaf6; --ink:#1d2420; --muted:#5d665f; --line:#d5d2c4;
-  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#8a5a2b; --mill:#7b2cbf; --zea:#00897b; --gold:#f5c400; --gold-line:#6b4e00; --ok:#2f6b3c; --warn:#9a5b00;
+  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#8a5a2b; --mill:#7b2cbf; --zea:#00897b; --gold:#1d4ed8; --gold-line:#ffffff; --ok:#2f6b3c; --warn:#9a5b00;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --shadow:0 6px 24px rgba(20,25,20,.22);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#4dd0b8; --gold:#ffd84d; --gold-line:#3a2a00; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#4dd0b8; --gold:#4f8cff; --gold-line:#0b1a3a; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#4dd0b8; --gold:#ffd84d; --gold-line:#3a2a00; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#4dd0b8; --gold:#4f8cff; --gold-line:#0b1a3a; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -92,8 +92,8 @@ table.kv td:first-child{color:var(--muted);width:38%}
 .sw-lidar{width:24px;height:18px;border-radius:4px;background:linear-gradient(135deg,#f2f2f2,#8a8a8a);border:1px solid var(--line)}
 .dot.zea{background:var(--zea);box-shadow:0 0 0 1px var(--zea);border-radius:3px}
 .chip.zea{border-color:var(--zea);color:var(--zea);font-weight:600}
-.dot.gold{background:var(--gold);box-shadow:0 0 0 2px var(--gold-line)}
-.chip.gold{border-color:var(--gold-line);background:var(--gold);color:#2a1e00;font-weight:600}
+.dot.gold{background:var(--gold);box-shadow:0 0 0 2px var(--gold-line),0 0 0 3px var(--gold)}
+.chip.gold{border-color:var(--gold);background:var(--gold);color:#fff;font-weight:600}
 .dot.lidar{border-radius:3px;background:linear-gradient(135deg,#eee,#777);box-shadow:0 0 0 1px var(--line)}
 .row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -255,8 +255,8 @@ $('btnLocate').addEventListener('click',()=>{
   navigator.geolocation.getCurrentPosition(p=>{
     const ll=[p.coords.latitude,p.coords.longitude];
     if(meMarker){map.removeLayer(meMarker);map.removeLayer(meCircle)}
-    meCircle=L.circle(ll,{radius:p.coords.accuracy,color:'#1a73e8',weight:1,fillOpacity:.12,interactive:false}).addTo(map);
-    meMarker=L.circleMarker(ll,{radius:7,color:'#fff',weight:2,fillColor:'#1a73e8',fillOpacity:1,interactive:false}).addTo(map);
+    meCircle=L.circle(ll,{radius:p.coords.accuracy,color:'#111',weight:1,dashArray:'4 4',fillColor:'#111',fillOpacity:.08,interactive:false}).addTo(map);
+    meMarker=L.circleMarker(ll,{radius:7,color:'#fff',weight:3,fillColor:'#111',fillOpacity:1,interactive:false}).addTo(map);
     map.setView(ll,Math.max(map.getZoom(),15));
   },err=>{status(err.code===1?'Brak zgody na lokalizację. Strona musi być otwarta z adresu https, żeby telefon podał pozycję.':'Nie udało się ustalić pozycji. Spróbuj ponownie pod gołym niebem.')},
   {enableHighAccuracy:true,timeout:15000,maximumAge:5000});
@@ -595,7 +595,7 @@ function openGold(g){
    }).catch(()=>{const box=$('goldWiki');if(box)box.innerHTML=''});
 }
 fetch('data/skarby.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(d=>{
-  const col=css('--gold')||'#f5c400', line=css('--gold-line')||'#6b4e00';
+  const col=css('--gold')||'#1d4ed8', line=css('--gold-line')||'#ffffff';
   d.elements.forEach(g=>{
     const m=L.circleMarker([g.lat,g.lon],{radius:g.a?10:8,color:line,weight:2.5,fillColor:col,fillOpacity:1,bubblingMouseEvents:false});
     m.on('click',()=>openGold(g)); m.addTo(goldGroup); golds.push({g,m});
