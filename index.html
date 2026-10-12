@@ -208,7 +208,7 @@ $('btnLocate').addEventListener('click',()=>{
 
 /* ================= WARSTWA 1a: stanowiska z opisem (OpenStreetMap + Wikipedia) ================= */
 const OSM_MIN_ZOOM=9;
-const OVERPASS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+const OVERPASS=['https://overpass-api.de/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter','https://overpass.private.coffee/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
 const TYPES={tumulus:'kurhan',fortification:'grodzisko',settlement:'osada',necropolis:'cmentarzysko',megalith:'megalit',city:'miasto',
   castle:'zamek',crannog:'osada nawodna',petroglyph:'ryty naskalne',mineral_extraction:'dawne wydobycie',mine:'dawna kopalnia',
   roman_villa:'willa rzymska',sacrificial_site:'miejsce kultowe',industrial:'stanowisko produkcyjne',hut_circle:'ślady chat',
@@ -230,8 +230,9 @@ function addSite(el){
 async function overpass(q){
   let last;
   for(const u of OVERPASS){
-    try{const r=await fetch(u,{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'}});
-      if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}catch(e){last=e}
+    const ac=new AbortController(); const t=setTimeout(()=>ac.abort(),20000);
+    try{const r=await fetch(u,{method:'POST',signal:ac.signal,body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+      if(!r.ok)throw new Error('HTTP '+r.status); const j=await r.json(); clearTimeout(t); return j}catch(e){clearTimeout(t);last=e}
   }
   throw last;
 }
@@ -246,14 +247,15 @@ async function loadSites(){
     (d.elements||[]).forEach(addSite); loaded.push(b); if(loaded.length>40)loaded.shift();
     $('stOsm').className='state ok'; $('stOsm').textContent='Wczytano '+sites.size+' stanowisk.';
   }catch(e){
-    $('stOsm').className='state warn'; $('stOsm').textContent='Serwer OpenStreetMap nie odpowiedział. Przesuń mapę, żeby spróbować ponownie.';
+    $('stOsm').className='state warn'; $('stOsm').textContent='Serwery OpenStreetMap są teraz przeciążone. Spróbuję ponownie za minutę.';
+    setTimeout(()=>{$('stOsm').className='state';loadSites()},60000);
   }
   osmBusy=false; refreshStatus();
   if(!inside(map.getBounds())&&$('stOsm').className!=='state warn')loadSites();
 }
 function refreshStatus(){
   if(map.getZoom()<OSM_MIN_ZOOM){status('<b>Przybliż mapę</b>, żeby zobaczyć stanowiska i młyny.');return}
-  if($('stOsm').className==='state warn'){status('Nie udało się pobrać stanowisk. Przesuń mapę, żeby spróbować ponownie.');return}
+  if($('stOsm').className==='state warn'){status('Serwery OpenStreetMap są przeciążone. Ponowię próbę za minutę.');return}
   const vb=map.getBounds(); let n=0; sites.forEach(m=>{if(vb.contains(m.getLatLng()))n++});
   let mn=0; mills.forEach(v=>{if(map.hasLayer(millGroups[v.k])&&vb.contains(v.m.getLatLng()))mn++});
   status('<b>'+n+'</b> '+(n===1?'stanowisko':'stanowisk')+' · <b>'+mn+'</b> '+(mn===1?'młyn':'młynów')+' w widoku');
@@ -457,10 +459,10 @@ async function loadMills(){
     (d.elements||[]).forEach(addMill); millLoaded.push(b); if(millLoaded.length>40)millLoaded.shift();
     const n={water:0,wind:0,place:0}; mills.forEach(v=>n[v.k]++);
     $('stMill').className='state ok'; $('stMill').textContent='Wczytano: '+n.water+' młynów wodnych, '+n.wind+' wiatraków, '+n.place+' miejsc po młynach.';
-  }catch(e){$('stMill').className='state warn';$('stMill').textContent='Serwer OpenStreetMap nie odpowiedział. Przesuń mapę, żeby spróbować ponownie.'}
+  }catch(e){$('stMill').className='state warn';$('stMill').textContent='Serwery OpenStreetMap są teraz przeciążone. Spróbuję ponownie za minutę.';setTimeout(loadMills,60000)}
   millBusy=false; refreshStatus();
 }
-map.on('moveend',()=>setTimeout(loadMills,700));
+map.on('moveend',()=>setTimeout(loadMills,1500));
 const MILLK={water:'młyn wodny',wind:'wiatrak',place:'nazwa po młynie'};
 function openMill(s){
   openKey=s.key; const t=s.t;
