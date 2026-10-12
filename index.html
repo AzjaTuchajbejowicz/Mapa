@@ -10,18 +10,18 @@
 /* Układ: mapa na cały ekran, wąska belka u góry, panel warstw i karta stanowiska wysuwane od dołu (obsługa kciukiem). */
 :root{
   --bg:#f3f1ea; --surface:#fbfaf6; --ink:#1d2420; --muted:#5d665f; --line:#d5d2c4;
-  --accent:#8a3b12; --accent-ink:#fff; --site:#b3261e; --reg:#6b2fa0; --ok:#2f6b3c; --warn:#9a5b00;
+  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --ok:#2f6b3c; --warn:#9a5b00;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --shadow:0 6px 24px rgba(20,25,20,.22);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#ff7a6b; --reg:#c79bf0; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#ff7a6b; --reg:#c79bf0; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -195,7 +195,7 @@ function addSite(el){
   const key=el.type+'/'+el.id; if(sites.has(key))return;
   const lat=el.lat!=null?el.lat:el.center&&el.center.lat, lon=el.lon!=null?el.lon:el.center&&el.center.lon; if(lat==null)return;
   const t=el.tags||{};
-  const m=L.circleMarker([lat,lon],{radius:8,color:css('--surface')||'#fff',weight:2,fillColor:css('--site')||'#b3261e',fillOpacity:.95,bubblingMouseEvents:false});
+  const m=L.circleMarker([lat,lon],{radius:8,color:css('--surface')||'#fff',weight:2,fillColor:css('--site')||'#c26a00',fillOpacity:.95,bubblingMouseEvents:false});
   m.on('click',()=>openSite({key,lat,lon,t}));
   m.addTo(osmGroup); sites.set(key,m);
 }
@@ -304,7 +304,19 @@ async function initNid(){
     if(await probe(layers,srs)){nidCfg={layers,srs};break outer}
   }
   if(!nidCfg){$('stNid').className='state warn';$('stNid').textContent='Usługa NID nie odpowiada. Warstwa rejestru jest teraz niedostępna.';return}
-  nidLayer=L.tileLayer.wms(NID,{layers:nidCfg.layers,format:'image/png',transparent:true,version:'1.1.1',opacity:.75,maxZoom:20,
+  /* Usługa NID rysuje obszary na szaro; przemalowuję kafelki na czerwono (wypełnienie półprzezroczyste, obrys pełny). */
+  const RedWMS=L.TileLayer.WMS.extend({createTile(coords,done){
+    const c=document.createElement('canvas'),s=this.getTileSize(); c.width=s.x; c.height=s.y;
+    fetch(this.getTileUrl(coords)).then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()}).then(b=>createImageBitmap(b)).then(bm=>{
+      const x=c.getContext('2d'); x.drawImage(bm,0,0,s.x,s.y);
+      const im=x.getImageData(0,0,s.x,s.y),d=im.data;
+      for(let i=0;i<d.length;i+=4){const a=d[i+3]; if(!a)continue;
+        if(d[i]>=100){d[i]=220;d[i+1]=30;d[i+2]=30;d[i+3]=Math.round(a*.45)} else {d[i]=160;d[i+1]=0;d[i+2]=0}}
+      x.putImageData(im,0,0); done(null,c);
+    }).catch(e=>done(e,c));
+    return c;
+  }});
+  nidLayer=new RedWMS(NID,{layers:nidCfg.layers,format:'image/png',transparent:true,version:'1.1.1',opacity:1,maxZoom:20,
     crs:nidCfg.srs==='EPSG:4326'?L.CRS.EPSG4326:L.CRS.EPSG3857,attribution:'Rejestr zabytków © NID'});
   $('stNid').className='state ok';$('stNid').textContent='Połączono z usługą NID.';
   if($('chkNid').checked)nidLayer.addTo(map);
