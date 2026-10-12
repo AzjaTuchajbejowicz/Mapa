@@ -1,0 +1,32 @@
+name: Aktualizacja danych mapy
+
+on:
+  push:
+    paths:
+      - scripts/pobierz_dane.py
+      - .github/workflows/dane.yml
+  schedule:
+    - cron: "17 3 * * 1"   # w każdy poniedziałek rano
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  dane:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pobierz dane z OpenStreetMap
+        run: python scripts/pobierz_dane.py
+      - name: Zapisz zmiany
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/*.json
+          git diff --cached --quiet || git commit -m "Aktualizacja danych z OpenStreetMap"
+          git push
