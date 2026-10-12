@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: dane
+  cancel-in-progress: true
+
 jobs:
   dane:
     runs-on: ubuntu-latest
