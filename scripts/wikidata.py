@@ -75,7 +75,7 @@ for cls, (layer, base) in CLASSES.items():
             tags["place"] = loc
         if name and name != qid:
             # ogólne nazwy z rejestru („Dwór”, „Zespół pałacowy”) uzupełniam o miejscowość
-            if loc and loc not in name and not re.search(r"\s[A-ZĄĆĘŁŃÓŚŹŻ]", name):
+            if loc and loc not in name and not re.search(r"\s[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]", name):
                 name = name + " – " + loc
             tags["name"] = name
         tags["wikidata"] = qid

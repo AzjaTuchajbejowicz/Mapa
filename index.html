@@ -740,7 +740,9 @@ function openCastle(c){
   h+='<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+c.lat+','+c.lon+'">Prowadź</a>'+
      srcLink(c.type+'/'+c.id,t)+'</div>'+
      '<p class="note">'+c.lat.toFixed(5)+', '+c.lon.toFixed(5)+'</p>';
-  showCard(t.name||('Bez nazwy – '+CASTK[k]),h);
+  let title=t.name||('Bez nazwy – '+CASTK[k]);
+  if(t.place&&title.indexOf(t.place)<0&&!/\s[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]/.test(title))title+=' – '+t.place;
+  showCard(title,h);
   if($('wiki'))loadWiki({key:openKey,t}).catch(()=>{if($('wiki'))$('wiki').innerHTML=''});
 }
 fetch('data/palace_zamki.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(d=>{
