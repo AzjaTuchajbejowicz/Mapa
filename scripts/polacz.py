@@ -14,6 +14,40 @@ def dist(a, b):
     k = math.cos(math.radians(a["lat"]))
     return math.hypot((a["lat"] - b["lat"]) * 111320, (a["lon"] - b["lon"]) * 111320 * k)
 
+
+def load_poly(path="build/poland.poly"):
+    """Wielokąty granicy Polski z pliku .poly Geofabrik (wyciąg danych OSM)."""
+    rings, cur = [], None
+    try:
+        for line in open(path, encoding="utf-8"):
+            t = line.split()
+            if not t: continue
+            if t[0] == "END":
+                if cur is not None: rings.append(cur); cur = None
+                continue
+            if len(t) == 2:
+                try: cur.append((float(t[0]), float(t[1])))
+                except (ValueError, AttributeError): pass
+            elif cur is None and t[0] not in ("poland", "polska"):
+                cur = []
+    except FileNotFoundError:
+        return None
+    return [r for r in rings if len(r) > 2]
+
+def in_poland(lat, lon, rings):
+    if not rings: return 49.0 < lat < 54.9 and 14.1 < lon < 24.2
+    inside = False
+    for r in rings:
+        j = len(r) - 1
+        for i in range(len(r)):
+            xi, yi = r[i]; xj, yj = r[j]
+            if (yi > lat) != (yj > lat) and lon < (xj - xi) * (lat - yi) / (yj - yi) + xi:
+                inside = not inside
+            j = i
+    return inside
+
+RINGS = load_poly()
+
 class Grid:
     """Szybkie wyszukiwanie sąsiadów: siatka ok. 1 km."""
     def __init__(self): self.c = {}
@@ -42,6 +76,8 @@ def merge(osm, wd, mention, r_wd, r_mention, mention_tags):
         g.add(e); out.append(e); added_wd += 1
     added_m = 0
     for m in mention:
+        if not in_poland(m["lat"], m["lon"], RINGS):
+            continue
         if next(g.near(m, r_mention), None):
             continue
         tags = mention_tags(m)
@@ -80,3 +116,22 @@ for name, osm_path, r_wd, r_m, mtags, m_path in plan:
         json.dump({"generated": today, "count": len(out), "sources": {"osm": len(osm), "wikidata": a, "wzmianki": b},
                    "elements": out}, f, ensure_ascii=False, separators=(",", ":"))
     print(f"{name}: {len(out)} (OSM {len(osm)}, Wikidata +{a}, wzmianki +{b})")
+
+# kamienie milowe i wąwozy drogowe idą do warstwy traktów bez zmian
+tr = load("build/osm_trakty_osm.json", None)
+if tr:
+    tr["generated"] = today
+    with open("data/trakty_osm.json", "w", encoding="utf-8") as f:
+        json.dump(tr, f, ensure_ascii=False, separators=(",", ":"))
+    print("trakty_osm:", tr["count"])
+
+# karczmy z Wikipedii i skarby: tylko punkty w granicach Polski
+for name in ("karczmy_wiki", "skarby"):
+    d = load(f"data/{name}.json", None)
+    if not d: continue
+    before = len(d["elements"])
+    d["elements"] = [e for e in d["elements"] if in_poland(e["lat"], e["lon"], RINGS)]
+    d["count"] = len(d["elements"])
+    with open(f"data/{name}.json", "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, separators=(",", ":"))
+    print(f"{name}: {d['count']} (usunięto spoza Polski: {before - d['count']})")

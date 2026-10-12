@@ -60,7 +60,7 @@ def castle_kind(t):
     return "zamek"
 
 
-sites, mills, inns, castles, seen = [], [], [], [], set()
+sites, mills, inns, castles, roads, seen = [], [], [], [], [], set()
 with open(sys.argv[1], encoding="utf-8") as f:
     for line in f:
         line = line.strip().lstrip("\x1e")
@@ -83,6 +83,11 @@ with open(sys.argv[1], encoding="utf-8") as f:
             sites.append(el); seen.add((typ, oid))
         elif is_mill(pr):
             mills.append(el); seen.add((typ, oid))
+        elif pr.get("historic") in ("milestone", "hollow_way", "road", "highway", "historic_road", "boundary_stone") and pr.get("historic") != "boundary_stone":
+            el["tags"]["historic"] = pr["historic"]
+            for k in ("inscription", "start_date", "name", "description"):
+                if pr.get(k): el["tags"][k] = pr[k][:200]
+            roads.append(el); seen.add((typ, oid))
         elif castle_kind(pr):
             el["tags"]["kind"] = castle_kind(pr)
             for k in ("historic", "heritage", "ruins"):
@@ -96,8 +101,8 @@ with open(sys.argv[1], encoding="utf-8") as f:
 
 today = datetime.date.today().isoformat()
 minimum = int(sys.argv[2]) if len(sys.argv) > 2 else 100
-for name, items in (("stanowiska", sites), ("mlyny", mills), ("karczmy_osm", inns), ("palace_zamki", castles)):
-    if len(items) < (minimum if name != "karczmy_osm" else min(minimum, 10)):
+for name, items in (("stanowiska", sites), ("mlyny", mills), ("karczmy_osm", inns), ("palace_zamki", castles), ("trakty_osm", roads)):
+    if len(items) < (minimum if name not in ("karczmy_osm", "trakty_osm") else min(minimum, 5)):
         raise SystemExit(f"Podejrzanie mało obiektów w {name}: {len(items)}")
     with open(f"build/osm_{name}.json", "w", encoding="utf-8") as f:
         json.dump({"generated": today, "count": len(items), "elements": items}, f, ensure_ascii=False, separators=(",", ":"))

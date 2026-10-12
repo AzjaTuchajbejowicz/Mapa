@@ -201,7 +201,7 @@ table.kv td:first-child{color:var(--muted);width:38%}
     <div class="group">
       <p class="eyebrow">2 · Dawne szlaki (XVI–XIX w.)</p>
       <label class="row"><span class="dot road"></span>
-        <span class="lab">Główne trakty<small>Najważniejsze drogi handlowe i pocztowe. Linia łączy miasta na trasie, więc przebieg jest przybliżony. Dotknij linii, żeby zobaczyć opis.</small></span>
+        <span class="lab">Główne trakty<small>Najważniejsze drogi handlowe i pocztowe. Linia łączy miasta na trasie, więc przebieg jest przybliżony. Po przybliżeniu widać też zabytkowe kamienie milowe i wąwozy drogowe, które wskazują dokładny ślad dawnych dróg.</small></span>
         <input type="checkbox" id="chkRoads" checked></label>
       <label class="row"><span class="dot lidar"></span>
         <span class="lab">Rzeźba terenu (LIDAR)<small>Cieniowany model terenu z Geoportalu. Widać na nim wąwozy i nasypy dawnych dróg, także tych, których nie ma na żadnej mapie.</small></span>
@@ -557,6 +557,24 @@ function openRoad(r,at){
     '<div><p class="eyebrow">Miasta na trasie</p><p class="txt">'+r.towns.map(esc).join(' → ')+'</p></div>'+near+
     '<p class="note">Linia łączy miasta prosto, a dawna droga mogła odbiegać od niej o kilka kilometrów. Dokładny ślad szukaj na warstwie LIDAR i na starych mapach.</p>');
 }
+
+/* kamienie milowe i wąwozy drogowe z OpenStreetMap: dokładne ślady dawnych dróg */
+const roadMarks=L.layerGroup(); let roadMarkN=0;
+const RMK={milestone:'kamień milowy',hollow_way:'wąwóz drogowy',road:'dawna droga',highway:'dawna droga',historic_road:'dawna droga'};
+fetch('data/trakty_osm.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{
+  const col=css('--road')||'#8a5a2b';
+  d.elements.forEach(e=>{const t=e.tags||{}; const k=RMK[t.historic]||'dawna droga';
+    const m=L.circleMarker([e.lat,e.lon],{radius:t.historic==='milestone'?5:6,color:'#fff',weight:1.5,fillColor:col,fillOpacity:1,bubblingMouseEvents:false});
+    m.on('click',()=>{openKey='rm:'+e.id;
+      let h='<div class="chips"><span class="chip">'+k+'</span>'+(t.start_date?'<span class="chip">'+esc(t.start_date)+'</span>':'')+'</div>';
+      if(t.inscription)h+='<div><p class="eyebrow">Napis</p><p class="txt">'+esc(t.inscription)+'</p></div>';
+      if(t.description)h+='<p class="txt">'+esc(t.description)+'</p>';
+      h+='<p class="note">'+(t.historic==='milestone'?'Kamienie milowe stawiano przy szosach w XVIII–XIX w. Wyznaczają dokładny przebieg dawnej drogi.':'Droga wcięta w teren przez wieki ruchu wozów. Ślad dawnego traktu.')+'</p>';
+      h+='<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+e.lat+','+e.lon+'">Prowadź</a>'+srcLink(e.type+'/'+e.id,t)+'</div><p class="note">'+e.lat.toFixed(5)+', '+e.lon.toFixed(5)+'</p>';
+      showCard(t.name||(k.charAt(0).toUpperCase()+k.slice(1)),h)});
+    m.addTo(roadMarks); roadMarkN++});
+  gate();
+}).catch(()=>{});
 const lidar=L.tileLayer.wms('https://mapy.geoportal.gov.pl/wss/service/PZGIK/NMT/GRID1/WMS/ShadedRelief',{layers:'Raster',format:'image/png',transparent:true,version:'1.1.1',opacity:.7,maxZoom:20,zIndex:3,attribution:'NMT © GUGiK'});
 
 
@@ -766,6 +784,7 @@ function renderSummary(){
     (()=>{const g={all:{},inv:{}};inns.forEach(v=>{const k=INNK[v.x.k];g.all[k]=(g.all[k]||0)+1;if(vb.contains(v.m.getLatLng()))g.inv[k]=(g.inv[k]||0)+1});return subs(g)})()+
     row('<span class="dot gold"></span>','Skarby',fmt(golds.filter(x=>vb.contains(x.m.getLatLng())).length),fmt(golds.length))+
     row('<span class="sw-road"></span>','Dawne trakty',fmt(rIn),fmt(ROADS.length))+
+    '<tr class="sub"><td>kamienie milowe i wąwozy</td><td>'+view(roadMarks.getLayers().filter(m=>vb.contains(m.getLatLng())).length)+'</td><td>'+fmt(roadMarkN)+'</td></tr>'+
     '<tr class="sub"><td>długość w km</td><td>'+fmt(Math.round(kmIn))+'</td><td>'+fmt(Math.round(kmAll))+'</td></tr>'+
     row('<span class="dot mill"></span>','Młyny wodne',view(W.inv),pl(W.all))+subs(W.g)+
     row('<span class="dot mill ring"></span>','Wiatraki',view(V.inv),pl(V.all))+subs(V.g)+
@@ -785,6 +804,7 @@ function gate(){
   const z=map.getZoom()>=OSM_MIN_ZOOM, tog=(g,on)=>{if(on&&!map.hasLayer(g))g.addTo(map);if(!on&&map.hasLayer(g))map.removeLayer(g)};
   tog(osmGroup,$('chkOsm').checked&&z);
   tog(innGroup,$('chkInn').checked&&z);
+  tog(roadMarks,$('chkRoads').checked&&z);
   tog(castleGroup,$('chkCastle').checked&&z);
   tog(millGroups.water,$('chkWater').checked&&z); tog(millGroups.wind,$('chkWind').checked&&z);
 }
@@ -803,7 +823,7 @@ $('chkCastle').addEventListener('change',()=>{store.set('castle',$('chkCastle').
 $('chkInn').checked=store.get('inn',true);
 $('chkInn').addEventListener('change',()=>{store.set('inn',$('chkInn').checked);gate()});
 $('chkRoads').checked=store.get('roads',true); $('chkLidar').checked=store.get('lidar',false);
-function applyRoads(){$('chkRoads').checked?roadGroup.addTo(map):map.removeLayer(roadGroup);store.set('roads',$('chkRoads').checked)}
+function applyRoads(){$('chkRoads').checked?roadGroup.addTo(map):map.removeLayer(roadGroup);store.set('roads',$('chkRoads').checked);gate()}
 function applyLidar(){if($('chkLidar').checked)lidar.addTo(map);else map.removeLayer(lidar);store.set('lidar',$('chkLidar').checked)}
 $('chkRoads').addEventListener('change',applyRoads); $('chkLidar').addEventListener('change',applyLidar);
 [['chkWater','water'],['chkWind','wind']].forEach(([id,k])=>{

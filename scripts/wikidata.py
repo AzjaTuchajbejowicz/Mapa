@@ -30,13 +30,14 @@ CLASSES = {
     "Q966002": ("karczmy", {"kind": "building"}),
 }
 
-Q = """SELECT ?i ?co ?iLabel ?art ?reg ?inc ?end ?desc WHERE {
+Q = """SELECT ?i ?co ?iLabel ?art ?reg ?inc ?end ?desc ?locLabel WHERE {
   ?i wdt:P31 wd:%s ; wdt:P17 wd:Q36 ; wdt:P625 ?co .
   OPTIONAL { ?art schema:about ?i ; schema:isPartOf <https://pl.wikipedia.org/> }
   OPTIONAL { ?i wdt:P3424 ?reg }
   OPTIONAL { ?i wdt:P571 ?inc }
   OPTIONAL { ?i wdt:P576 ?end }
   OPTIONAL { ?i schema:description ?desc FILTER(lang(?desc) = "pl") }
+  OPTIONAL { ?i wdt:P131 ?loc }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "pl,en". }
 }"""
 
@@ -69,7 +70,13 @@ for cls, (layer, base) in CLASSES.items():
             continue
         tags = dict(base)
         name = b.get("iLabel", {}).get("value", "")
+        loc = b.get("locLabel", {}).get("value", "")
+        if loc and not re.match(r"^Q\d+$", loc):
+            tags["place"] = loc
         if name and name != qid:
+            # ogólne nazwy z rejestru („Dwór”, „Zespół pałacowy”) uzupełniam o miejscowość
+            if loc and loc not in name and not re.search(r"\s[A-ZĄĆĘŁŃÓŚŹŻ]", name):
+                name = name + " – " + loc
             tags["name"] = name
         tags["wikidata"] = qid
         tags["src"] = "wikidata"

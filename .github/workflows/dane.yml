@@ -40,6 +40,7 @@ jobs:
           osmium tags-filter polska.osm.pbf nwr/historic nwr/heritage nwr/place nwr/building=inn,castle,palace nwr/ruins:historic $E -o wybrane.osm.pbf
           osmium export wybrane.osm.pbf -f geojsonseq -a type,id --geometry-types=point,linestring,polygon -o wybrane.geojsonseq
           mkdir -p data build
+          curl -sSfL --retry 5 -o build/poland.poly https://download.geofabrik.de/europe/poland.poly || true
           python3 scripts/zbuduj_dane.py wybrane.geojsonseq
       - name: Uzupełnij z Wikidata (m.in. rejestr zabytków)
         continue-on-error: true
@@ -47,14 +48,14 @@ jobs:
       - name: Uzupełnij wzmiankami z Wikipedii (młyny, grodziska, kurhany)
         continue-on-error: true
         run: python3 scripts/wzmianki.py
-      - name: Połącz źródła bez duplikatów
-        run: python3 scripts/polacz.py
       - name: Zbierz udokumentowane skarby (Wikipedia, Wikidata)
         continue-on-error: true
         run: python3 scripts/skarby.py
       - name: Zbierz karczmy z Wikipedii
         continue-on-error: true
         run: python3 scripts/karczmy.py
+      - name: Połącz źródła bez duplikatów
+        run: python3 scripts/polacz.py
       - name: Zapisz zmiany
         run: |
           git config user.name "github-actions[bot]"
