@@ -10,18 +10,18 @@
 /* Układ: mapa na cały ekran, wąska belka u góry, panel warstw i karta stanowiska wysuwane od dołu (obsługa kciukiem). */
 :root{
   --bg:#f3f1ea; --surface:#fbfaf6; --ink:#1d2420; --muted:#5d665f; --line:#d5d2c4;
-  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#8a5a2b; --mill:#7b2cbf; --ok:#2f6b3c; --warn:#9a5b00;
+  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#8a5a2b; --mill:#7b2cbf; --zea:#00897b; --ok:#2f6b3c; --warn:#9a5b00;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --shadow:0 6px 24px rgba(20,25,20,.22);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#4dd0b8; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#4dd0b8; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -90,6 +90,8 @@ table.kv td:first-child{color:var(--muted);width:38%}
 .sw-area{width:24px;height:18px;border-radius:4px;background:rgba(220,30,30,.45);border:2px solid #a00000}
 .sw-road{width:28px;height:0;border-top:4px dashed var(--road)}
 .sw-lidar{width:24px;height:18px;border-radius:4px;background:linear-gradient(135deg,#f2f2f2,#8a8a8a);border:1px solid var(--line)}
+.dot.zea{background:var(--zea);box-shadow:0 0 0 1px var(--zea);border-radius:3px}
+.chip.zea{border-color:var(--zea);color:var(--zea);font-weight:600}
 .dot.lidar{border-radius:3px;background:linear-gradient(135deg,#eee,#777);box-shadow:0 0 0 1px var(--line)}
 .row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -122,6 +124,7 @@ table.kv td:first-child{color:var(--muted);width:38%}
 <nav class="quick" id="quick" aria-label="Szybkie włączanie warstw">
   <button class="qc" type="button" data-chk="chkOsm"><span class="dot"></span><span>Stanowiska</span></button>
   <button class="qc" type="button" data-chk="chkNid"><span class="sw-area"></span><span>Rejestr NID</span></button>
+  <button class="qc" type="button" data-chk="chkZea"><span class="dot zea"></span><span>ZABYTKI.PL</span></button>
   <button class="qc" type="button" data-chk="chkRoads"><span class="sw-road"></span><span>Trakty</span></button>
   <button class="qc" type="button" data-chk="chkLidar"><span class="sw-lidar"></span><span>LIDAR</span></button>
   <button class="qc" type="button" data-chk="chkWater"><span class="dot mill"></span><span>Młyny</span></button>
@@ -153,6 +156,13 @@ table.kv td:first-child{color:var(--muted);width:38%}
         <span class="lab">Rejestr zabytków archeologicznych<small>Zasięgi stanowisk wpisanych do rejestru, dane NID. Dotknij obszaru, żeby zobaczyć wpis.</small>
         <span class="state" id="stNid">Łączę z usługą NID…</span></span>
         <input type="checkbox" id="chkNid" checked></label>
+    </div>
+    <div class="group">
+      <p class="eyebrow">4 · ZABYTKI.PL</p>
+      <label class="row"><span class="dot zea"></span>
+        <span class="lab">Ewidencja zabytków archeologicznych<small>Te same stanowiska co na mapie zabytek.pl: setki tysięcy miejsc z badań AZP, z datowaniem i funkcją. Dane NID. Dotknij punktu, żeby zobaczyć opis.</small>
+        <span class="state" id="stZea"></span></span>
+        <input type="checkbox" id="chkZea" checked></label>
     </div>
     <div class="group">
       <p class="eyebrow">2 · Dawne szlaki (XVI–XIX w.)</p>
@@ -350,6 +360,18 @@ async function loadWiki(s){
 /* ================= WARSTWA 1b: rejestr zabytków archeologicznych (usługa WMS NID) ================= */
 const NID='https://usluga.zabytek.gov.pl/INSPIRE_AMD/service.svc/get';
 let nidLayer=null, nidCfg=null;
+/* Kafelki WMS przemalowane na jeden kolor: jasne piksele dostają kolor wypełnienia, ciemne kolor obrysu. */
+function RecolorWMS(fill,line,fillAlpha){return L.TileLayer.WMS.extend({createTile(coords,done){
+  const c=document.createElement('canvas'),s=this.getTileSize(); c.width=s.x; c.height=s.y;
+  fetch(this.getTileUrl(coords)).then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()}).then(b=>createImageBitmap(b)).then(bm=>{
+    const x=c.getContext('2d'); x.drawImage(bm,0,0,s.x,s.y);
+    const im=x.getImageData(0,0,s.x,s.y),d=im.data;
+    for(let i=0;i<d.length;i+=4){const a=d[i+3]; if(!a)continue; const l=(d[i]+d[i+1]+d[i+2])/3;
+      if(l>=100){d[i]=fill[0];d[i+1]=fill[1];d[i+2]=fill[2];d[i+3]=Math.round(a*fillAlpha)} else {d[i]=line[0];d[i+1]=line[1];d[i+2]=line[2]}}
+    x.putImageData(im,0,0); done(null,c);
+  }).catch(e=>done(e,c));
+  return c;
+}})}
 function probe(layers,srs){
   return new Promise(res=>{
     const bbox=srs==='EPSG:3857'?'1558000,6275000,2690000,7330000':'14,49,24.2,55';
@@ -373,40 +395,52 @@ async function initNid(){
   }
   if(!nidCfg){$('stNid').className='state warn';$('stNid').textContent='Usługa NID nie odpowiada. Warstwa rejestru jest teraz niedostępna.';return}
   /* Usługa NID rysuje obszary na szaro; przemalowuję kafelki na czerwono (wypełnienie półprzezroczyste, obrys pełny). */
-  const RedWMS=L.TileLayer.WMS.extend({createTile(coords,done){
-    const c=document.createElement('canvas'),s=this.getTileSize(); c.width=s.x; c.height=s.y;
-    fetch(this.getTileUrl(coords)).then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()}).then(b=>createImageBitmap(b)).then(bm=>{
-      const x=c.getContext('2d'); x.drawImage(bm,0,0,s.x,s.y);
-      const im=x.getImageData(0,0,s.x,s.y),d=im.data;
-      for(let i=0;i<d.length;i+=4){const a=d[i+3]; if(!a)continue;
-        if(d[i]>=100){d[i]=220;d[i+1]=30;d[i+2]=30;d[i+3]=Math.round(a*.45)} else {d[i]=160;d[i+1]=0;d[i+2]=0}}
-      x.putImageData(im,0,0); done(null,c);
-    }).catch(e=>done(e,c));
-    return c;
-  }});
+  const RedWMS=RecolorWMS([220,30,30],[160,0,0],.45);
   nidLayer=new RedWMS(NID,{layers:nidCfg.layers,format:'image/png',transparent:true,version:'1.1.1',opacity:1,maxZoom:20,zIndex:6,
     crs:nidCfg.srs==='EPSG:4326'?L.CRS.EPSG4326:L.CRS.EPSG3857,attribution:'Rejestr zabytków © NID'});
   $('stNid').className='state ok';$('stNid').textContent='Połączono z usługą NID.';
   if($('chkNid').checked)nidLayer.addTo(map);
 }
-async function nidInfo(e){
-  if(!nidLayer||!map.hasLayer(nidLayer))return;
-  const b=map.getBounds(), sz=map.getSize(), p=map.latLngToContainerPoint(e.latlng); let bbox;
-  if(nidCfg.srs==='EPSG:3857'){const a=L.CRS.EPSG3857.project(b.getSouthWest()),c=L.CRS.EPSG3857.project(b.getNorthEast());bbox=[a.x,a.y,c.x,c.y].join(',')}
-  else bbox=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].join(',');
-  const base=NID+'?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS='+encodeURIComponent(nidCfg.layers)+'&QUERY_LAYERS='+encodeURIComponent(nidCfg.layers)+
-    '&STYLES=&SRS='+nidCfg.srs+'&BBOX='+bbox+'&WIDTH='+sz.x+'&HEIGHT='+sz.y+'&X='+Math.round(p.x)+'&Y='+Math.round(p.y)+'&FEATURE_COUNT=5&INFO_FORMAT=';
-  let txt; try{const r=await fetch(base+'text/xml');if(!r.ok)return;txt=await r.text()}catch(err){return}
-  if(!txt||/ServiceException/i.test(txt))return;
-  const feats=parseInfo(txt); if(!feats.length)return;
-  const ll=e.latlng;
-  showCard(feats[0].siteName||'Zabytek archeologiczny w rejestrze',
-    feats.map((f,i)=>(i?'<div><p class="eyebrow">'+esc(f.siteName||'Kolejny wpis')+'</p>':'<div>')+
-      '<div class="chips"><span class="chip reg">rejestr zabytków</span>'+(f.siteProtectionClassification==='archaeological'?'<span class="chip">stanowisko archeologiczne</span>':'')+'</div>'+
-      '<table class="kv">'+NIDF.filter(k=>f[k[0]]).map(k=>'<tr><td>'+k[1]+'</td><td>'+esc(k[2]?k[2](f[k[0]]):f[k[0]])+'</td></tr>').join('')+'</table></div>').join('')+
-    '<p class="note">Teren zabytku wpisanego do rejestru. Poszukiwania w tym miejscu wymagają pozwolenia wojewódzkiego konserwatora zabytków.</p>'+
-    '<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+ll.lat+','+ll.lng+'">Prowadź</a></div>'+
-    '<p class="note">'+ll.lat.toFixed(5)+', '+ll.lng.toFixed(5)+'</p>');
+const ZEA='https://usluga.zabytek.gov.pl/ZEA/service.svc/get', ZEAL='Ewidencja_zabytków_archeologicznych';
+const zeaLayer=new (RecolorWMS([0,137,123],[0,77,64],1))(ZEA,{layers:ZEAL,format:'image/png',transparent:true,version:'1.1.1',maxZoom:20,zIndex:5,attribution:'Ewidencja zabytków archeologicznych © NID'});
+zeaLayer.on('tileerror',()=>{$('stZea').className='state warn';$('stZea').textContent='Usługa NID nie odpowiada na części mapy. Przesuń mapę, żeby spróbować ponownie.'});
+zeaLayer.on('load',()=>{$('stZea').className='state ok';$('stZea').textContent='Połączono z usługą NID.'});
+/* Pyta usługę WMS o obiekty w małym oknie wokół dotkniętego punktu (ok. 8 px w każdą stronę). */
+async function wmsFeatures(url,layers,e){
+  const p=map.latLngToContainerPoint(e.latlng), r=8;
+  const sw=map.containerPointToLatLng([p.x-r,p.y+r]), ne=map.containerPointToLatLng([p.x+r,p.y-r]);
+  const q=url+'?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS='+encodeURIComponent(layers)+'&QUERY_LAYERS='+encodeURIComponent(layers)+
+    '&STYLES=&SRS=EPSG:4326&BBOX='+[sw.lng,sw.lat,ne.lng,ne.lat].join(',')+'&WIDTH='+(2*r+1)+'&HEIGHT='+(2*r+1)+'&X='+r+'&Y='+r+'&FEATURE_COUNT=10&INFO_FORMAT=text/xml';
+  try{const res=await fetch(q); if(!res.ok)return []; const t=await res.text(); if(/ServiceException/i.test(t))return []; return parseInfo(t)}catch(err){return []}
+}
+const ZEAF=[['MIEJSCOWOSC','Miejscowość'],['GMINA','Gmina'],['POWIAT','Powiat'],['WOJEWODZTWO','Województwo'],['DOKLADNOSC_POLOZENIA','Położenie na mapie'],
+  ['WYKAZ_DOKUMENTOW','Dokumentacja'],['DATA_WPISU','Data wpisu',v=>v.split('-').reverse().join('.')],['FORMA_OCHRONY','Forma ochrony'],['INSPIRE_ID','Identyfikator NID']];
+async function mapInfo(e){
+  const zeaOn=map.hasLayer(zeaLayer), nidOn=nidLayer&&map.hasLayer(nidLayer);
+  if(!zeaOn&&!nidOn)return;
+  const [reg,zea]=await Promise.all([nidOn?wmsFeatures(NID,nidCfg.layers,e):[], zeaOn?wmsFeatures(ZEA,ZEAL,e):[]]);
+  if(!reg.length&&!zea.length)return;
+  const ll=e.latlng; let h='', title='';
+  zea.forEach((f,i)=>{
+    if(!title)title=f.NAZWA||'Stanowisko archeologiczne';
+    const fun=[f.FUNKC_SZCZEG_POZ_II,f.FUNKC_SZCZEG_POZ_III,f.FUKC_SZCZEG].filter(Boolean);
+    h+='<div>'+(i?'<p class="eyebrow">'+esc(f.NAZWA||'Kolejne stanowisko')+'</p>':'')+
+      '<div class="chips"><span class="chip zea">ZABYTKI.PL</span>'+(f.CHRONOLOGIA?'<span class="chip">'+esc(f.CHRONOLOGIA)+'</span>':'')+fun.map(x=>'<span class="chip">'+esc(x)+'</span>').join('')+'</div>'+
+      '<table class="kv">'+ZEAF.filter(k=>f[k[0]]).map(k=>'<tr><td>'+k[1]+'</td><td>'+esc(k[2]?k[2](f[k[0]]):f[k[0]])+'</td></tr>').join('')+'</table></div>';
+  });
+  if(zea.length)h+='<p class="note">Stanowisko z ewidencji zabytków. Prace ziemne i poszukiwania w tym miejscu wymagają pozwolenia wojewódzkiego konserwatora zabytków. '+
+    (zea.some(f=>/przybli/i.test(f.DOKLADNOSC_POLOZENIA||''))?'Położenie jest przybliżone, więc stanowisko może leżeć kilkadziesiąt metrów obok punktu.':'')+'</p>';
+  reg.forEach((f,i)=>{
+    if(!title)title=f.siteName||'Zabytek archeologiczny w rejestrze';
+    h+='<div>'+(zea.length||i?'<p class="eyebrow">'+esc(f.siteName||'Wpis w rejestrze')+'</p>':'')+
+      '<div class="chips"><span class="chip reg">rejestr zabytków</span></div>'+
+      '<table class="kv">'+NIDF.filter(k=>f[k[0]]).map(k=>'<tr><td>'+k[1]+'</td><td>'+esc(k[2]?k[2](f[k[0]]):f[k[0]])+'</td></tr>').join('')+'</table></div>';
+  });
+  if(reg.length)h+='<p class="note">Teren zabytku wpisanego do rejestru. Poszukiwania w tym miejscu wymagają pozwolenia wojewódzkiego konserwatora zabytków.</p>';
+  h+='<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+ll.lat+','+ll.lng+'">Prowadź</a>'+
+     (zea.length?'<a target="_blank" rel="noopener" href="https://zabytek.pl/pl/mapa?sekcja=zabytki-archeologiczne">Mapa zabytek.pl</a>':'')+'</div>'+
+     '<p class="note">'+ll.lat.toFixed(5)+', '+ll.lng.toFixed(5)+'</p>';
+  openKey='wms:'+ll.lat+ll.lng; showCard(title,h);
 }
 const NIDF=[['siteName','Nazwa'],['legalFoundationDocument','Nr w rejestrze'],['legalFoundationDate','Data wpisu',v=>{const m=v.match(/^(\d\d)\/(\d\d)\/(\d{4})$/);return m?m[2]+'.'+m[1]+'.'+m[3]:v}],
   ['percentageUnderDesignation','Ochrona obszaru',v=>v+'%'],['inspireID','Identyfikator NID']];
@@ -416,7 +450,7 @@ function parseInfo(txt){
     [...l.getElementsByTagNameNS('*','Attribute')].forEach(a=>{const v=a.textContent.replace(/\s+/g,' ').replace(/[;\s]+$/,'').trim();if(v)f[a.getAttribute('Name')]=v});return f})
     .filter(f=>Object.keys(f).length);
 }
-map.on('click',e=>{if(anyOpen()){closeSheets();return}nidInfo(e)});
+map.on('click',e=>{if(anyOpen()){closeSheets();return}mapInfo(e)});
 
 
 /* ================= WARSTWA 2: dawne szlaki XVI–XIX w. ================= */
@@ -547,6 +581,7 @@ function renderSummary(){
   let h='<table class="sumt"><thead><tr><th>Warstwa</th><th>W widoku</th><th>W Polsce</th></tr></thead><tbody>'+
     row('<span class="dot"></span>','Stanowiska archeologiczne',view(sIn),pl(sAll))+subs(sg,true)+
     row('<span class="sw-area"></span>','Zabytki w rejestrze NID','–','7 600+')+
+    row('<span class="dot zea"></span>','ZABYTKI.PL (ewidencja)','–','–')+
     row('<span class="sw-road"></span>','Dawne trakty',fmt(rIn),fmt(ROADS.length))+
     '<tr class="sub"><td>długość w km</td><td>'+fmt(Math.round(kmIn))+'</td><td>'+fmt(Math.round(kmAll))+'</td></tr>'+
     row('<span class="dot mill"></span>','Młyny wodne',view(W.inv),pl(W.all))+subs(W.g)+
@@ -555,7 +590,7 @@ function renderSummary(){
   const notes=[];
   if(!zoomOk)notes.push('Przybliż mapę, żeby policzyć obiekty w widoku.');
   if(STATIC!==true)notes.push('* Dane dla całej Polski jeszcze się pobierają, więc liczby obejmują tylko obszary, które już oglądałeś.');
-  notes.push('Liczby zabytków z rejestru NID nie da się odczytać z mapy dla wybranego obszaru. Łączna liczba pochodzi z opisu zbioru NID.');
+  notes.push('Usługi NID (rejestr i ewidencja ZABYTKI.PL) pokazują obiekty na mapie, ale nie podają ich liczby. Łączna liczba zabytków w rejestrze pochodzi z opisu zbioru NID.');
   h+=notes.map(n=>'<p class="note">'+n+'</p>').join('');
   $('sumBody').innerHTML=h;
 }
@@ -572,6 +607,9 @@ map.on('zoomend',gate);
 function applyOsm(){store.set('osm',$('chkOsm').checked);gate();loadSites();refreshStatus()}
 $('chkOsm').addEventListener('change',applyOsm);
 $('chkNid').addEventListener('change',()=>{store.set('nid',$('chkNid').checked);if(!nidLayer)return;$('chkNid').checked?nidLayer.addTo(map):map.removeLayer(nidLayer)});
+$('chkZea').checked=store.get('zea',true);
+function applyZea(){$('chkZea').checked?zeaLayer.addTo(map):map.removeLayer(zeaLayer);store.set('zea',$('chkZea').checked)}
+$('chkZea').addEventListener('change',applyZea); applyZea();
 $('chkRoads').checked=store.get('roads',true); $('chkLidar').checked=store.get('lidar',false);
 function applyRoads(){$('chkRoads').checked?roadGroup.addTo(map):map.removeLayer(roadGroup);store.set('roads',$('chkRoads').checked)}
 function applyLidar(){if($('chkLidar').checked)lidar.addTo(map);else map.removeLayer(lidar);store.set('lidar',$('chkLidar').checked)}
