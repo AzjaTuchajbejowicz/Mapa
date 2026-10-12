@@ -10,18 +10,18 @@
 /* Układ: mapa na cały ekran, wąska belka u góry, panel warstw i karta stanowiska wysuwane od dołu (obsługa kciukiem). */
 :root{
   --bg:#f3f1ea; --surface:#fbfaf6; --ink:#1d2420; --muted:#5d665f; --line:#d5d2c4;
-  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#8a5a2b; --mill:#7b2cbf; --zea:#00897b; --ok:#2f6b3c; --warn:#9a5b00;
+  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#8a5a2b; --mill:#7b2cbf; --zea:#00897b; --gold:#f5c400; --gold-line:#6b4e00; --ok:#2f6b3c; --warn:#9a5b00;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --shadow:0 6px 24px rgba(20,25,20,.22);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#4dd0b8; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#4dd0b8; --gold:#ffd84d; --gold-line:#3a2a00; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#4dd0b8; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --zea:#4dd0b8; --gold:#ffd84d; --gold-line:#3a2a00; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -92,6 +92,8 @@ table.kv td:first-child{color:var(--muted);width:38%}
 .sw-lidar{width:24px;height:18px;border-radius:4px;background:linear-gradient(135deg,#f2f2f2,#8a8a8a);border:1px solid var(--line)}
 .dot.zea{background:var(--zea);box-shadow:0 0 0 1px var(--zea);border-radius:3px}
 .chip.zea{border-color:var(--zea);color:var(--zea);font-weight:600}
+.dot.gold{background:var(--gold);box-shadow:0 0 0 2px var(--gold-line)}
+.chip.gold{border-color:var(--gold-line);background:var(--gold);color:#2a1e00;font-weight:600}
 .dot.lidar{border-radius:3px;background:linear-gradient(135deg,#eee,#777);box-shadow:0 0 0 1px var(--line)}
 .row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -125,6 +127,7 @@ table.kv td:first-child{color:var(--muted);width:38%}
   <button class="qc" type="button" data-chk="chkOsm"><span class="dot"></span><span>Stanowiska</span></button>
   <button class="qc" type="button" data-chk="chkNid"><span class="sw-area"></span><span>Rejestr NID</span></button>
   <button class="qc" type="button" data-chk="chkZea"><span class="dot zea"></span><span>ZABYTKI.PL</span></button>
+  <button class="qc" type="button" data-chk="chkGold"><span class="dot gold"></span><span>Skarby</span></button>
   <button class="qc" type="button" data-chk="chkRoads"><span class="sw-road"></span><span>Trakty</span></button>
   <button class="qc" type="button" data-chk="chkLidar"><span class="sw-lidar"></span><span>LIDAR</span></button>
   <button class="qc" type="button" data-chk="chkWater"><span class="dot mill"></span><span>Młyny</span></button>
@@ -163,6 +166,13 @@ table.kv td:first-child{color:var(--muted);width:38%}
         <span class="lab">Ewidencja zabytków archeologicznych<small>Te same stanowiska co na mapie zabytek.pl: setki tysięcy miejsc z badań AZP, z datowaniem i funkcją. Dane NID. Dotknij punktu, żeby zobaczyć opis.</small>
         <span class="state" id="stZea"></span></span>
         <input type="checkbox" id="chkZea" checked></label>
+    </div>
+    <div class="group">
+      <p class="eyebrow">5 · Skarby</p>
+      <label class="row"><span class="dot gold"></span>
+        <span class="lab">Udokumentowane znaleziska skarbów<small>Skarby monet, srebra, brązów i kosztowności opisane w Wikipedii i Wikidata. Dotknij punktu, żeby zobaczyć opis.</small>
+        <span class="state" id="stGold"></span></span>
+        <input type="checkbox" id="chkGold" checked></label>
     </div>
     <div class="group">
       <p class="eyebrow">2 · Dawne szlaki (XVI–XIX w.)</p>
@@ -558,6 +568,43 @@ function openMill(s){
 }
 
 
+
+/* ================= WARSTWA 5: skarby ================= */
+const goldGroup=L.layerGroup(); const golds=[];
+function openGold(g){
+  openKey='gold:'+g.n;
+  let h='<div class="chips"><span class="chip gold">skarb</span><span class="chip">'+(g.a?'opisany w osobnym artykule':'wzmianka w artykule o miejscowości')+'</span></div>';
+  if(g.t)h+='<p class="txt">'+esc(g.t)+'</p>';
+  if(g.w)h+='<div id="goldWiki"><p class="note">Szukam szczegółów w Wikipedii…</p></div>';
+  h+='<p class="note">'+(g.a?'Punkt wskazuje miejsce znalezienia podane w źródle, często z dokładnością do miejscowości.':'Punkt wskazuje miejscowość, a nie dokładne miejsce znalezienia.')+
+     ' Znaleziony skarb należy zgłosić konserwatorowi zabytków; zabytki archeologiczne są własnością Skarbu Państwa.</p>';
+  h+='<div class="links">'+(g.w?'<a target="_blank" rel="noopener" href="https://pl.wikipedia.org/wiki/'+encodeURIComponent(g.w.replace(/ /g,'_'))+'">Wikipedia</a>':'')+
+     '<a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+g.lat+','+g.lon+'">Prowadź</a></div>'+
+     '<p class="note">'+g.lat.toFixed(5)+', '+g.lon.toFixed(5)+'</p>';
+  showCard(g.n,h);
+  if(!g.w)return;
+  fetch('https://pl.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&prop=extracts&explaintext=1&titles='+encodeURIComponent(g.w))
+   .then(r=>r.json()).then(j=>{
+     const box=openKey==='gold:'+g.n?$('goldWiki'):null; if(!box)return;
+     const text=(Object.values(j.query.pages)[0].extract||'').replace(/\n=+[^=\n]+=+\n/g,'\n');
+     let parts;
+     if(g.a){parts=[text.split(/\n/).filter(x=>x.trim()).slice(0,4).join('\n')]}
+     else{parts=text.replace(/\n+/g,' ').split(/(?<=[.!?])\s+(?=[A-ZĄĆĘŁŃÓŚŹŻ0-9])/).filter(x=>/skarb/i.test(x)&&!/Skarb\w* Państwa/.test(x)).slice(0,5)}
+     const body=parts.join(g.a?'':'\n\n').trim();
+     box.innerHTML=body?'<div><p class="eyebrow">Z Wikipedii</p><p class="txt">'+esc(cut(body,1600))+'</p></div>':'';
+   }).catch(()=>{const box=$('goldWiki');if(box)box.innerHTML=''});
+}
+fetch('data/skarby.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(d=>{
+  const col=css('--gold')||'#f5c400', line=css('--gold-line')||'#6b4e00';
+  d.elements.forEach(g=>{
+    const m=L.circleMarker([g.lat,g.lon],{radius:g.a?10:8,color:line,weight:2.5,fillColor:col,fillOpacity:1,bubblingMouseEvents:false});
+    m.on('click',()=>openGold(g)); m.addTo(goldGroup); golds.push({g,m});
+  });
+  const dd=d.generated.split('-').reverse().join('.');
+  $('stGold').className='state ok'; $('stGold').textContent=d.count+' skarbów w całej Polsce, dane z '+dd+'.';
+  if(!$('summary').hidden)renderSummary();
+}).catch(()=>{$('stGold').className='state warn';$('stGold').textContent='Lista skarbów jest jeszcze przygotowywana. Spróbuj za kilka minut.'});
+
 /* ---------- podsumowanie: ile obiektów każdej warstwy w widoku i w całej Polsce ---------- */
 const fmt=n=>n.toLocaleString('pl-PL');
 function roadKm(r,b){let km=0;for(let i=1;i<r.towns.length;i++){const a=TOWNS[r.towns[i-1]],c=TOWNS[r.towns[i]];if(!a||!c)continue;
@@ -582,6 +629,7 @@ function renderSummary(){
     row('<span class="dot"></span>','Stanowiska archeologiczne',view(sIn),pl(sAll))+subs(sg,true)+
     row('<span class="sw-area"></span>','Zabytki w rejestrze NID','–','7 600+')+
     row('<span class="dot zea"></span>','ZABYTKI.PL (ewidencja)','–','–')+
+    row('<span class="dot gold"></span>','Skarby',fmt(golds.filter(x=>vb.contains(x.m.getLatLng())).length),fmt(golds.length))+
     row('<span class="sw-road"></span>','Dawne trakty',fmt(rIn),fmt(ROADS.length))+
     '<tr class="sub"><td>długość w km</td><td>'+fmt(Math.round(kmIn))+'</td><td>'+fmt(Math.round(kmAll))+'</td></tr>'+
     row('<span class="dot mill"></span>','Młyny wodne',view(W.inv),pl(W.all))+subs(W.g)+
@@ -610,6 +658,9 @@ $('chkNid').addEventListener('change',()=>{store.set('nid',$('chkNid').checked);
 $('chkZea').checked=store.get('zea',true);
 function applyZea(){$('chkZea').checked?zeaLayer.addTo(map):map.removeLayer(zeaLayer);store.set('zea',$('chkZea').checked)}
 $('chkZea').addEventListener('change',applyZea); applyZea();
+$('chkGold').checked=store.get('gold',true);
+function applyGold(){$('chkGold').checked?goldGroup.addTo(map):map.removeLayer(goldGroup);store.set('gold',$('chkGold').checked)}
+$('chkGold').addEventListener('change',applyGold); applyGold();
 $('chkRoads').checked=store.get('roads',true); $('chkLidar').checked=store.get('lidar',false);
 function applyRoads(){$('chkRoads').checked?roadGroup.addTo(map):map.removeLayer(roadGroup);store.set('roads',$('chkRoads').checked)}
 function applyLidar(){if($('chkLidar').checked)lidar.addTo(map);else map.removeLayer(lidar);store.set('lidar',$('chkLidar').checked)}

@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - scripts/zbuduj_dane.py
+      - scripts/skarby.py
       - .github/workflows/dane.yml
   schedule:
     - cron: "17 3 * * 1"   # w każdy poniedziałek rano
@@ -36,6 +37,9 @@ jobs:
           osmium export wybrane.osm.pbf -f geojsonseq -a type,id --geometry-types=point,linestring,polygon -o wybrane.geojsonseq
           mkdir -p data
           python3 scripts/zbuduj_dane.py wybrane.geojsonseq
+      - name: Zbierz udokumentowane skarby (Wikipedia, Wikidata)
+        continue-on-error: true
+        run: python3 scripts/skarby.py
       - name: Zapisz zmiany
         run: |
           git config user.name "github-actions[bot]"
