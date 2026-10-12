@@ -3,7 +3,7 @@ name: Aktualizacja danych mapy
 on:
   push:
     paths:
-      - scripts/pobierz_dane.py
+      - scripts/zbuduj_dane.py
       - .github/workflows/dane.yml
   schedule:
     - cron: "17 3 * * 1"   # w każdy poniedziałek rano
@@ -22,15 +22,25 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Pobierz dane z OpenStreetMap
-        run: python scripts/pobierz_dane.py
+      - name: Zainstaluj osmium
+        run: sudo apt-get update -q && sudo apt-get install -y -q osmium-tool
+      - name: Pobierz dane OpenStreetMap dla Polski (Geofabrik)
+        run: curl -sSfL --retry 5 -o polska.osm.pbf https://download.geofabrik.de/europe/poland-latest.osm.pbf
+      - name: Wybierz stanowiska, młyny i wiatraki
+        run: |
+          E=""
+          for P in "" disused: abandoned: ruins: demolished: was: razed: destroyed:; do
+            for K in man_made building; do E="$E nwr/${P}${K}=watermill,windmill,mill"; done
+          done
+          osmium tags-filter polska.osm.pbf nwr/historic=archaeological_site,tumulus,watermill,windmill,mill $E -o wybrane.osm.pbf
+          osmium export wybrane.osm.pbf -f geojsonseq -a type,id --geometry-types=point,linestring,polygon -o wybrane.geojsonseq
+          mkdir -p data
+          python3 scripts/zbuduj_dane.py wybrane.geojsonseq
       - name: Zapisz zmiany
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/*.json
           git diff --cached --quiet || git commit -m "Aktualizacja danych z OpenStreetMap"
+          git pull --rebase -q
           git push
