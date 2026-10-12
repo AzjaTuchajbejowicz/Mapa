@@ -600,7 +600,7 @@ function addMill(el){
   if(t.src==='wzmianka'){st.radius=k==='water'?6:5.5;st.fillOpacity=k==='water'?.6:1;st.opacity=.7}
   const m=L.circleMarker([lat,lon],Object.assign(st,{bubblingMouseEvents:false}));
   m.on('click',()=>openMill({key,lat,lon,t,k,y,life}));
-  m.addTo(millGroups[k]); mills.set(key,{m,k,life:life||'zachowany'});
+  m.addTo(millGroups[k]); mills.set(key,{m,k,life:t.src==='wzmianka'?'wzmianka w Wikipedii':(life||'zachowany')});
 }
 function millsOn(){return Object.values(millGroups).some(g=>map.hasLayer(g))}
 async function loadMills(){
