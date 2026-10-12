@@ -10,18 +10,18 @@
 /* Układ: mapa na cały ekran, wąska belka u góry, panel warstw i karta stanowiska wysuwane od dołu (obsługa kciukiem). */
 :root{
   --bg:#f3f1ea; --surface:#fbfaf6; --ink:#1d2420; --muted:#5d665f; --line:#d5d2c4;
-  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#6d3fb0; --ok:#2f6b3c; --warn:#9a5b00;
+  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#8a5a2b; --mill:#7b2cbf; --ok:#2f6b3c; --warn:#9a5b00;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --shadow:0 6px 24px rgba(20,25,20,.22);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#b48cf0; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#b48cf0; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#d9a066; --mill:#c39bff; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -74,6 +74,9 @@ table.kv td:first-child{color:var(--muted);width:38%}
 .dot{width:14px;height:14px;border-radius:50%;flex:none;background:var(--site);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--site)}
 .dot.reg{border-radius:3px;background:var(--reg);box-shadow:0 0 0 1px var(--reg)}
 .dot.road{border-radius:2px;height:6px;width:18px;background:var(--road);box-shadow:none;border:0}
+.dot.mill{background:var(--mill);box-shadow:0 0 0 1px var(--mill)}
+.dot.mill.ring{background:var(--surface);box-shadow:0 0 0 3px var(--mill) inset,0 0 0 1px var(--mill)}
+.dot.mill.faint{opacity:.55}
 .dot.lidar{border-radius:3px;background:linear-gradient(135deg,#eee,#777);box-shadow:0 0 0 1px var(--line)}
 .row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -128,6 +131,20 @@ table.kv td:first-child{color:var(--muted);width:38%}
       <label class="row"><span class="dot lidar"></span>
         <span class="lab">Rzeźba terenu (LIDAR)<small>Cieniowany model terenu z Geoportalu. Widać na nim wąwozy i nasypy dawnych dróg, także tych, których nie ma na żadnej mapie.</small></span>
         <input type="checkbox" id="chkLidar"></label>
+    </div>
+    <div class="group">
+      <p class="eyebrow">3 · Młyny i wiatraki (XV–XIX w.)</p>
+      <label class="row"><span class="dot mill"></span>
+        <span class="lab">Młyny wodne<small>Młyny i ich pozostałości z OpenStreetMap.</small></span>
+        <input type="checkbox" id="chkWater" checked></label>
+      <label class="row"><span class="dot mill ring"></span>
+        <span class="lab">Wiatraki<small>Wiatraki i ich pozostałości z OpenStreetMap.</small></span>
+        <input type="checkbox" id="chkWind" checked></label>
+      <label class="row"><span class="dot mill faint"></span>
+        <span class="lab">Miejsca po młynach<small>Wsie, przysiółki i kolonie z „Młyn” lub „Wiatrak” w nazwie. Nazwa zwykle zostaje po dawnym młynie, nawet gdy po budynku nie ma śladu.</small>
+        <span class="state" id="stMill"></span></span>
+        <input type="checkbox" id="chkMillPlace" checked></label>
+      <p class="note">Pomijam obiekty z datą budowy po 1900 r. Większość młynów w danych nie ma daty, więc nie da się ich odsiać po wieku.</p>
     </div>
     <p class="note">Kolejne warstwy pojawią się tutaj.</p>
   </div>
@@ -235,11 +252,11 @@ async function loadSites(){
   if(!inside(map.getBounds())&&$('stOsm').className!=='state warn')loadSites();
 }
 function refreshStatus(){
-  if(!map.hasLayer(osmGroup)){status('Warstwa stanowisk z opisem jest wyłączona.');return}
-  if(map.getZoom()<OSM_MIN_ZOOM){status('<b>Przybliż mapę</b>, żeby zobaczyć stanowiska z opisem.');return}
+  if(map.getZoom()<OSM_MIN_ZOOM){status('<b>Przybliż mapę</b>, żeby zobaczyć stanowiska i młyny.');return}
   if($('stOsm').className==='state warn'){status('Nie udało się pobrać stanowisk. Przesuń mapę, żeby spróbować ponownie.');return}
   const vb=map.getBounds(); let n=0; sites.forEach(m=>{if(vb.contains(m.getLatLng()))n++});
-  status('<b>'+n+'</b> '+(n===1?'stanowisko':'stanowisk')+' z opisem w widoku');
+  let mn=0; mills.forEach(v=>{if(map.hasLayer(millGroups[v.k])&&vb.contains(v.m.getLatLng()))mn++});
+  status('<b>'+n+'</b> '+(n===1?'stanowisko':'stanowisk')+' · <b>'+mn+'</b> '+(mn===1?'młyn':'młynów')+' w widoku');
 }
 map.on('moveend',()=>{clearTimeout(osmTimer);osmTimer=setTimeout(loadSites,450)});
 
@@ -389,7 +406,7 @@ const roadRenderer=L.canvas({tolerance:12});
 ROADS.forEach(r=>{
   const ll=r.towns.map(t=>TOWNS[t]).filter(Boolean);
   L.polyline(ll,{renderer:roadRenderer,color:'#fff',weight:8,opacity:.75,interactive:false}).addTo(roadGroup);
-  const line=L.polyline(ll,{renderer:roadRenderer,color:css('--road')||'#6d3fb0',weight:4,opacity:.95,dashArray:'10 6',bubblingMouseEvents:false}).addTo(roadGroup);
+  const line=L.polyline(ll,{renderer:roadRenderer,color:css('--road')||'#8a5a2b',weight:4,opacity:.95,dashArray:'10 6',bubblingMouseEvents:false}).addTo(roadGroup);
   line.on('click',e=>openRoad(r,e.latlng));
   r.line=line;
 });
@@ -406,6 +423,63 @@ function openRoad(r,at){
 }
 const lidar=L.tileLayer.wms('https://mapy.geoportal.gov.pl/wss/service/PZGIK/NMT/GRID1/WMS/ShadedRelief',{layers:'Raster',format:'image/png',transparent:true,version:'1.1.1',opacity:.7,maxZoom:20,zIndex:3,attribution:'NMT © GUGiK'});
 
+
+/* ================= WARSTWA 3: młyny wodne i wiatraki ================= */
+const millGroups={water:L.layerGroup(),wind:L.layerGroup(),place:L.layerGroup()};
+const mills=new Map(); let millLoaded=[], millBusy=false;
+function millKind(t){
+  const v=t.man_made||t.historic||t.building||t['historic:building']||'';
+  if(/windmill/.test(v))return 'wind'; if(/watermill|mill/.test(v))return 'water';
+  if(t.place)return 'place'; return null;
+}
+function yearOf(t){const m=String(t.start_date||t['construction_date']||'').match(/\d{4}/);return m?+m[0]:null}
+function addMill(el){
+  const key=el.type+'/'+el.id; if(mills.has(key))return;
+  const lat=el.lat!=null?el.lat:el.center&&el.center.lat, lon=el.lon!=null?el.lon:el.center&&el.center.lon; if(lat==null)return;
+  const t=el.tags||{}; const k=millKind(t); if(!k)return;
+  const y=yearOf(t); if(y&&y>1900)return;
+  const col=css('--mill')||'#7b2cbf', surf=css('--surface')||'#fff';
+  const st=k==='water'?{radius:8,color:surf,weight:2,fillColor:col,fillOpacity:.95}
+          :k==='wind'?{radius:7,color:col,weight:4,fillColor:surf,fillOpacity:1}
+          :{radius:6,color:col,weight:1,fillColor:col,fillOpacity:.45};
+  const m=L.circleMarker([lat,lon],Object.assign(st,{bubblingMouseEvents:false}));
+  m.on('click',()=>openMill({key,lat,lon,t,k,y}));
+  m.addTo(millGroups[k]); mills.set(key,{m,k});
+}
+function millsOn(){return Object.values(millGroups).some(g=>map.hasLayer(g))}
+async function loadMills(){
+  if(!millsOn()||map.getZoom()<OSM_MIN_ZOOM)return;
+  if(millLoaded.some(l=>l.contains(map.getBounds()))||millBusy)return;
+  millBusy=true; const b=map.getBounds().pad(0.35);
+  const bb='('+[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()].map(n=>n.toFixed(5)).join(',')+')';
+  try{
+    const d=await overpass('[out:json][timeout:25];(nwr["man_made"~"^(watermill|windmill)$"]'+bb+';nwr["historic"~"^(mill|watermill|windmill)$"]'+bb+';nwr["building"~"^(watermill|windmill)$"]'+bb+';node["place"~"^(village|hamlet|isolated_dwelling|locality|neighbourhood|quarter|farm)$"]["name"~"[Mm]łyn|[Ww]iatrak"]'+bb+';);out center tags 4000;');
+    (d.elements||[]).forEach(addMill); millLoaded.push(b); if(millLoaded.length>40)millLoaded.shift();
+    const n={water:0,wind:0,place:0}; mills.forEach(v=>n[v.k]++);
+    $('stMill').className='state ok'; $('stMill').textContent='Wczytano: '+n.water+' młynów wodnych, '+n.wind+' wiatraków, '+n.place+' miejsc po młynach.';
+  }catch(e){$('stMill').className='state warn';$('stMill').textContent='Serwer OpenStreetMap nie odpowiedział. Przesuń mapę, żeby spróbować ponownie.'}
+  millBusy=false; refreshStatus();
+}
+map.on('moveend',()=>setTimeout(loadMills,700));
+const MILLK={water:'młyn wodny',wind:'wiatrak',place:'nazwa po młynie'};
+function openMill(s){
+  openKey=s.key; const t=s.t;
+  const title=t['name:pl']||t.name||(s.k==='wind'?'Wiatrak':s.k==='water'?'Młyn wodny':'Miejsce po młynie');
+  const c=[MILLK[s.k]];
+  if(s.y)c.push('zbudowany '+s.y); if(t.ruins==='yes'||/ruins/.test(t.historic||'')||t['ruins:man_made'])c.push('ruiny');
+  if(t['windmill:type']||t.windmill_type)c.push(t['windmill:type']||t.windmill_type); if(t.heritage)c.push('zabytek');
+  if(s.k==='place'&&t.place)c.push({village:'wieś',hamlet:'przysiółek',isolated_dwelling:'osada',locality:'uroczysko',neighbourhood:'część miejscowości',quarter:'część miejscowości',farm:'kolonia'}[t.place]||t.place);
+  let h='<div class="chips">'+c.map(x=>'<span class="chip">'+esc(x)+'</span>').join('')+'</div>';
+  const d=t['description:pl']||t.description||t['note:pl']||t.note; if(d)h+='<div><p class="eyebrow">Opis</p><p class="txt">'+esc(d)+'</p></div>';
+  if(s.k==='place')h+='<p class="note">Nazwa wskazuje, że w okolicy stał młyn lub wiatrak. Samo miejsce budynku szukaj nad ciekiem wodnym (młyn) albo na wzniesieniu (wiatrak), najlepiej na warstwie LIDAR.</p>';
+  if(t.wikipedia||t['wikipedia:pl']||t.wikidata)h+='<div id="wiki"><p class="note">Szukam opisu w Wikipedii…</p></div>';
+  h+='<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+s.lat+','+s.lon+'">Prowadź</a>'+
+     '<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/'+esc(s.key)+'">Źródło w OSM</a></div>'+
+     '<p class="note">'+s.lat.toFixed(5)+', '+s.lon.toFixed(5)+'</p>';
+  showCard(title,h);
+  if($('wiki'))loadWiki(s).catch(()=>{if(openKey===s.key&&$('wiki'))$('wiki').innerHTML='<p class="note">Nie udało się pobrać opisu z Wikipedii.</p>'});
+}
+
 /* ---------- przełączniki warstw ---------- */
 $('chkOsm').checked=store.get('osm',true); $('chkNid').checked=store.get('nid',true);
 function applyOsm(){if($('chkOsm').checked){osmGroup.addTo(map);loadSites()}else{map.removeLayer(osmGroup);refreshStatus()}store.set('osm',$('chkOsm').checked)}
@@ -415,6 +489,11 @@ $('chkRoads').checked=store.get('roads',true); $('chkLidar').checked=store.get('
 function applyRoads(){$('chkRoads').checked?roadGroup.addTo(map):map.removeLayer(roadGroup);store.set('roads',$('chkRoads').checked)}
 function applyLidar(){if($('chkLidar').checked)lidar.addTo(map);else map.removeLayer(lidar);store.set('lidar',$('chkLidar').checked)}
 $('chkRoads').addEventListener('change',applyRoads); $('chkLidar').addEventListener('change',applyLidar);
+[['chkWater','water'],['chkWind','wind'],['chkMillPlace','place']].forEach(([id,k])=>{
+  $(id).checked=store.get('mill_'+k,true);
+  const apply=()=>{$(id).checked?millGroups[k].addTo(map):map.removeLayer(millGroups[k]);store.set('mill_'+k,$(id).checked);loadMills()};
+  $(id).addEventListener('change',apply); apply();
+});
 applyRoads(); applyLidar(); applyOsm(); initNid();
 })();
 </script>
