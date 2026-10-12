@@ -6,6 +6,9 @@ on:
       - scripts/zbuduj_dane.py
       - scripts/skarby.py
       - scripts/karczmy.py
+      - scripts/wikidata.py
+      - scripts/wzmianki.py
+      - scripts/polacz.py
       - .github/workflows/dane.yml
   schedule:
     - cron: "17 3 * * 1"   # w każdy poniedziałek rano
@@ -21,7 +24,7 @@ concurrency:
 jobs:
   dane:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - name: Zainstaluj osmium
@@ -36,8 +39,16 @@ jobs:
           done
           osmium tags-filter polska.osm.pbf nwr/historic nwr/heritage nwr/place nwr/building=inn,castle,palace nwr/ruins:historic $E -o wybrane.osm.pbf
           osmium export wybrane.osm.pbf -f geojsonseq -a type,id --geometry-types=point,linestring,polygon -o wybrane.geojsonseq
-          mkdir -p data
+          mkdir -p data build
           python3 scripts/zbuduj_dane.py wybrane.geojsonseq
+      - name: Uzupełnij z Wikidata (m.in. rejestr zabytków)
+        continue-on-error: true
+        run: python3 scripts/wikidata.py
+      - name: Uzupełnij wzmiankami z Wikipedii (młyny, grodziska, kurhany)
+        continue-on-error: true
+        run: python3 scripts/wzmianki.py
+      - name: Połącz źródła bez duplikatów
+        run: python3 scripts/polacz.py
       - name: Zbierz udokumentowane skarby (Wikipedia, Wikidata)
         continue-on-error: true
         run: python3 scripts/skarby.py

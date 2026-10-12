@@ -1,4 +1,4 @@
-"""Buduje pliki data/stanowiska.json i data/mlyny.json z wyciągu OpenStreetMap
+"""Buduje pliki build/osm_*.json (stanowiska, młyny, karczmy, pałace i zamki) z wyciągu OpenStreetMap
 (plik GeoJSON Sequence z `osmium export`). Uruchamiane przez GitHub Actions."""
 import json, sys, datetime
 
@@ -99,6 +99,6 @@ minimum = int(sys.argv[2]) if len(sys.argv) > 2 else 100
 for name, items in (("stanowiska", sites), ("mlyny", mills), ("karczmy_osm", inns), ("palace_zamki", castles)):
     if len(items) < (minimum if name != "karczmy_osm" else min(minimum, 10)):
         raise SystemExit(f"Podejrzanie mało obiektów w {name}: {len(items)}")
-    with open(f"data/{name}.json", "w", encoding="utf-8") as f:
+    with open(f"build/osm_{name}.json", "w", encoding="utf-8") as f:
         json.dump({"generated": today, "count": len(items), "elements": items}, f, ensure_ascii=False, separators=(",", ":"))
     print(f"{name}: {len(items)} obiektów")

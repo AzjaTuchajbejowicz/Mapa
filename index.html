@@ -303,7 +303,8 @@ function addSite(el){
   const key=el.type+'/'+el.id; if(sites.has(key))return;
   const lat=el.lat!=null?el.lat:el.center&&el.center.lat, lon=el.lon!=null?el.lon:el.center&&el.center.lon; if(lat==null)return;
   const t=el.tags||{};
-  const m=L.circleMarker([lat,lon],{radius:8,color:css('--surface')||'#fff',weight:2,fillColor:css('--site')||'#c26a00',fillOpacity:.95,bubblingMouseEvents:false});
+  const men=t.src==='wzmianka';
+  const m=L.circleMarker([lat,lon],{radius:men?6:8,color:css('--surface')||'#fff',weight:men?1.5:2,fillColor:css('--site')||'#c26a00',fillOpacity:men?.6:.95,bubblingMouseEvents:false});
   m.on('click',()=>openSite({key,lat,lon,t}));
   m.kind=siteType(t)||'inne'; m.addTo(osmGroup); sites.set(key,m);
 }
@@ -352,15 +353,42 @@ function chips(t){
   return c.length?'<div class="chips">'+c.map(x=>'<span class="chip">'+esc(x)+'</span>').join('')+'</div>':'';
 }
 let openKey=null;
+/* Linki do źródła rekordu i znaczek źródła: OpenStreetMap, Wikidata albo wzmianka w Wikipedii. */
+function srcLink(key,t){
+  const [type,...rest]=key.split('/'); const id=rest.join('/');
+  if(type==='wd')return '<a target="_blank" rel="noopener" href="https://www.wikidata.org/wiki/'+esc(id)+'">Źródło w Wikidata</a>';
+  if(type==='wp')return '<a target="_blank" rel="noopener" href="https://pl.wikipedia.org/wiki/'+encodeURIComponent(id.replace(/ /g,'_'))+'">Wikipedia</a>';
+  return '<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/'+esc(key)+'">Źródło w OSM</a>';
+}
+function srcChips(t){
+  const c=[];
+  if(t.src==='wikidata')c.push('Wikidata');
+  if(t.src==='wzmianka')c.push('wzmianka w Wikipedii');
+  if(t.heritage==='rejestr')c.push('rejestr zabytków'+(t['ref:nid']?' '+t['ref:nid']:''));
+  return c.map(x=>'<span class="chip">'+esc(x)+'</span>').join('');
+}
+/* Zdania z artykułu w Wikipedii, które dotyczą danego obiektu (np. „We wsi był młyn wodny…”). */
+function mentionSentences(title,re,key,boxId){
+  fetch('https://pl.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&prop=extracts&explaintext=1&titles='+encodeURIComponent(title))
+   .then(r=>r.json()).then(j=>{
+     const box=openKey===key?$(boxId):null; if(!box)return;
+     const text=(Object.values(j.query.pages)[0].extract||'').replace(/\n=+[^=\n]+=+\n/g,'\n').replace(/\n+/g,' ');
+     const parts=text.split(/(?<=[.!?])\s+(?=[A-ZĄĆĘŁŃÓŚŹŻ0-9])/).filter(x=>re.test(x)).slice(0,6);
+     box.innerHTML=parts.length?'<div><p class="eyebrow">Z Wikipedii</p><p class="txt">'+esc(cut(parts.join('\n\n'),1800))+'</p></div>':'';
+   }).catch(()=>{const b=$(boxId);if(b)b.innerHTML=''});
+}
+const MENTION_NOTE='<p class="note">Punkt wskazuje miejscowość z artykułu w Wikipedii, a nie dokładne miejsce obiektu. Szukaj go na LIDAR, ortofotomapie i starych mapach.</p>';
 function openSite(s){
-  openKey=s.key; const t=s.t;
-  let h=chips(t);
-  const d=t['description:pl']||t.description||t.note; if(d)h+='<div><p class="eyebrow">Opis</p><p class="txt">'+esc(d)+'</p></div>';
-  h+='<div id="wiki"><p class="note">Szukam opisu w Wikipedii…</p></div>';
+  openKey=s.key; const t=s.t, men=t.src==='wzmianka';
+  let h=chips(t).replace('</div>',srcChips(t)+'</div>'); if(h.indexOf('chips')<0&&srcChips(t))h='<div class="chips">'+srcChips(t)+'</div>';
+  if(men&&t.mention)h+='<p class="txt">'+esc(t.mention)+'</p>';
+  const d=t['description:pl']||t.description||t.note; if(d&&!men)h+='<div><p class="eyebrow">Opis</p><p class="txt">'+esc(d)+'</p></div>';
+  h+=(men?'<div id="wiki"><p class="note">Szukam szczegółów w Wikipedii…</p></div>'+MENTION_NOTE:'<div id="wiki"><p class="note">Szukam opisu w Wikipedii…</p></div>');
   h+='<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+s.lat+','+s.lon+'">Prowadź</a>'+
-     '<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/'+esc(s.key)+'">Źródło w OSM</a></div>'+
+     srcLink(s.key,t)+'</div>'+
      '<p class="note">'+s.lat.toFixed(5)+', '+s.lon.toFixed(5)+'</p>';
   showCard(siteName(t),h);
+  if(men){mentionSentences(t.wikipedia.slice(3),/grodzisk|gród|kurhan|cmentarzysk|archeolog|osad\w* (kultury|z )|znalezisk|wykopalisk/i,s.key,'wiki');return}
   loadWiki(s).catch(()=>{if(openKey===s.key&&$('wiki'))$('wiki').innerHTML='<p class="note">Nie udało się pobrać opisu z Wikipedii.</p>'});
 }
 const cut=(s,n)=>s.length>n?s.slice(0,s.lastIndexOf(' ',n))+'…':s;
@@ -551,6 +579,7 @@ function addMill(el){
   const col=css('--mill')||'#7b2cbf', surf=css('--surface')||'#fff';
   const st=k==='water'?{radius:8,color:surf,weight:2,fillColor:col,fillOpacity:.95}
           :{radius:7,color:col,weight:4,fillColor:surf,fillOpacity:1};
+  if(t.src==='wzmianka'){st.radius=k==='water'?6:5.5;st.fillOpacity=k==='water'?.6:1;st.opacity=.7}
   const m=L.circleMarker([lat,lon],Object.assign(st,{bubblingMouseEvents:false}));
   m.on('click',()=>openMill({key,lat,lon,t,k,y,life}));
   m.addTo(millGroups[k]); mills.set(key,{m,k,life:life||'zachowany'});
@@ -581,13 +610,17 @@ function openMill(s){
   const c=[MILLK[s.k]];
   if(s.life)c.push(s.life); if(s.y)c.push('zbudowany '+s.y); if(t.ruins==='yes'||/ruins/.test(t.historic||'')||t['ruins:man_made'])c.push('ruiny');
   if(t['windmill:type']||t.windmill_type)c.push(t['windmill:type']||t.windmill_type); if(t.heritage)c.push('zabytek');
-  let h='<div class="chips">'+c.map(x=>'<span class="chip">'+esc(x)+'</span>').join('')+'</div>';
-  const d=t['description:pl']||t.description||t['note:pl']||t.note; if(d)h+='<div><p class="eyebrow">Opis</p><p class="txt">'+esc(d)+'</p></div>';
+  const men=t.src==='wzmianka';
+  let h='<div class="chips">'+c.map(x=>'<span class="chip">'+esc(x)+'</span>').join('')+srcChips(t)+'</div>';
+  if(men&&t.mention)h+='<p class="txt">'+esc(t.mention)+'</p>';
+  const d=t['description:pl']||t.description||t['note:pl']||t.note; if(d&&!men)h+='<div><p class="eyebrow">Opis</p><p class="txt">'+esc(d)+'</p></div>';
   if(t.wikipedia||t['wikipedia:pl']||t.wikidata)h+='<div id="wiki"><p class="note">Szukam opisu w Wikipedii…</p></div>';
+  if(men)h+=MENTION_NOTE;
   h+='<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+s.lat+','+s.lon+'">Prowadź</a>'+
-     '<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/'+esc(s.key)+'">Źródło w OSM</a></div>'+
+     srcLink(s.key,t)+'</div>'+
      '<p class="note">'+s.lat.toFixed(5)+', '+s.lon.toFixed(5)+'</p>';
   showCard(title,h);
+  if(men){mentionSentences(t.wikipedia.slice(3),/młyn|wiatrak|koźlak|paltrak|folusz|młynarz/i,s.key,'wiki');return}
   if($('wiki'))loadWiki(s).catch(()=>{if(openKey===s.key&&$('wiki'))$('wiki').innerHTML='<p class="note">Nie udało się pobrać opisu z Wikipedii.</p>'});
 }
 
@@ -640,7 +673,7 @@ function openInn(x){
   if(x.w)h+='<div id="innWiki"><p class="note">Szukam wzmianek o karczmie w Wikipedii…</p></div>';
   h+='<p class="note">'+(x.k==='building'?'Punkt wskazuje budynek dawnej karczmy.':x.k==='place'?'Nazwa miejscowości lub jej części pochodzi zwykle od stojącej tu dawniej karczmy.':'Punkt wskazuje miejscowość. Karczma stała najczęściej przy drodze przez wieś, przy rozstajach, moście albo młynie.')+'</p>';
   h+='<div class="links">'+(x.w?'<a target="_blank" rel="noopener" href="https://pl.wikipedia.org/wiki/'+encodeURIComponent(x.w.replace(/ /g,'_'))+'">Wikipedia</a>':'')+
-     (x.osm?'<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/'+esc(x.osm)+'">Źródło w OSM</a>':'')+
+     (x.osm?srcLink(x.osm,t):'')+
      '<a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+x.lat+','+x.lon+'">Prowadź</a></div>'+
      '<p class="note">'+x.lat.toFixed(5)+', '+x.lon.toFixed(5)+'</p>';
   showCard(x.n,h);
@@ -681,13 +714,13 @@ function openCastle(c){
   if(isRuin(t))chips.push('<span class="chip">ruina</span>');
   if(t.castle_type&&CTYPE[t.castle_type]&&CTYPE[t.castle_type]!==CASTK[k])chips.push('<span class="chip">'+CTYPE[t.castle_type]+'</span>');
   const y=String(t.start_date||t.construction_date||''); if(y)chips.push('<span class="chip">'+esc(y)+'</span>');
-  if(t.heritage)chips.push('<span class="chip">zabytek</span>');
-  let h='<div class="chips">'+chips.join('')+'</div>';
+  if(t.heritage&&t.heritage!=='rejestr')chips.push('<span class="chip">zabytek</span>');
+  let h='<div class="chips">'+chips.join('')+srcChips(t)+'</div>';
   const d=t['description:pl']||t.description; if(d)h+='<p class="txt">'+esc(d)+'</p>';
   if(t.wikipedia||t['wikipedia:pl']||t.wikidata)h+='<div id="wiki"><p class="note">Szukam opisu w Wikipedii…</p></div>';
   h+='<p class="note">Okolice dawnych rezydencji (dawne ogrody, folwarki, drogi dojazdowe) to tereny dawnego życia codziennego. Teren przy zabytku zwykle jest objęty ochroną konserwatorską i bywa własnością prywatną.</p>';
   h+='<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+c.lat+','+c.lon+'">Prowadź</a>'+
-     '<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/'+c.type+'/'+c.id+'">Źródło w OSM</a></div>'+
+     srcLink(c.type+'/'+c.id,t)+'</div>'+
      '<p class="note">'+c.lat.toFixed(5)+', '+c.lon.toFixed(5)+'</p>';
   showCard(t.name||('Bez nazwy – '+CASTK[k]),h);
   if($('wiki'))loadWiki({key:openKey,t}).catch(()=>{if($('wiki'))$('wiki').innerHTML=''});
@@ -699,7 +732,7 @@ fetch('data/palace_zamki.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new E
     m.on('click',()=>openCastle(c)); m.addTo(castleGroup); castles.push({c,m,k:t.kind,ruin});
   });
   const n={zamek:0,palac:0,dwor:0}; castles.forEach(v=>n[v.k]++);
-  $('stCastle').className='state ok'; $('stCastle').textContent=n.zamek+' zamków, '+n.palac+' pałaców, '+n.dwor+' dworów, dane z '+d.generated.split('-').reverse().join('.')+'.';
+  $('stCastle').className='state ok'; $('stCastle').textContent=n.zamek+' zamków, '+n.palac+' pałaców, '+n.dwor+' dworów'+(d.sources?' (OpenStreetMap '+d.sources.osm+', Wikidata '+d.sources.wikidata+')':'')+', dane z '+d.generated.split('-').reverse().join('.')+'.';
   gate(); if(!$('summary').hidden)renderSummary();
 }).catch(()=>{$('stCastle').className='state warn';$('stCastle').textContent='Lista pałaców i zamków jest jeszcze przygotowywana. Spróbuj za kilka minut.'});
 
@@ -786,9 +819,10 @@ applyRoads(); applyLidar(); applyOsm(); initNid();
     const [a,b]=await Promise.all([get('data/stanowiska.json'),get('data/mlyny.json')]);
     a.elements.forEach(addSite); b.elements.forEach(addMill); STATIC=true;
     const d=a.generated.split('-').reverse().join('.');
-    $('stOsm').className='state ok'; $('stOsm').textContent=a.count+' stanowisk w całej Polsce, dane z '+d+'.';
+    const srcTxt=x=>x.sources?' (OpenStreetMap '+x.sources.osm+', Wikidata '+x.sources.wikidata+', wzmianki w Wikipedii '+x.sources.wzmianki+')':'';
+    $('stOsm').className='state ok'; $('stOsm').textContent=a.count+' stanowisk w całej Polsce'+srcTxt(a)+', dane z '+d+'.';
     const n={water:0,wind:0}; mills.forEach(v=>n[v.k]++);
-    $('stMill').className='state ok'; $('stMill').textContent=n.water+' młynów wodnych i '+n.wind+' wiatraków w całej Polsce, dane z '+d+'.';
+    $('stMill').className='state ok'; $('stMill').textContent=n.water+' młynów wodnych i '+n.wind+' wiatraków w całej Polsce'+srcTxt(b)+', dane z '+d+'.';
   }catch(e){STATIC=false; loadSites(); loadMills()}
   gate(); refreshStatus(); if(!$('summary').hidden)renderSummary();
 })();
