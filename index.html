@@ -146,7 +146,7 @@ L.control.scale({imperial:false,position:'topleft'}).addTo(map);
 map.on('moveend',()=>{const c=map.getCenter();store.set('view',{c:[c.lat,c.lng],z:map.getZoom()})});
 
 const bases={
-  mapa:L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:20,subdomains:'abcd',attribution:'© OpenStreetMap, © CARTO'}),
+  mapa:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),
   orto:L.tileLayer.wms('https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/StandardResolution',{layers:'Raster',format:'image/jpeg',version:'1.1.1',maxZoom:20,attribution:'Ortofotomapa © GUGiK'}),
   topo:L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenStreetMap, SRTM, © OpenTopoMap'})
 };
@@ -189,7 +189,8 @@ const osmGroup=L.layerGroup();
 const sites=new Map(); let loaded=[]; let osmBusy=false, osmTimer=null;
 
 function inside(b){return loaded.some(l=>l.contains(b))}
-function siteName(t){return t['name:pl']||t.name||t.alt_name||(t.site_type&&TYPES[t.site_type]?('Stanowisko: '+TYPES[t.site_type]):'Stanowisko archeologiczne')}
+function siteType(t){const v=t.archaeological_site||t.site_type;if(t.fortification_type==='hill_fort')return 'grodzisko';return v?(TYPES[v]||v.replace(/_/g,' ')):''}
+function siteName(t){return t['name:pl']||t.name||t.alt_name||(siteType(t)?('Stanowisko: '+siteType(t)):'Stanowisko archeologiczne')}
 function addSite(el){
   const key=el.type+'/'+el.id; if(sites.has(key))return;
   const lat=el.lat!=null?el.lat:el.center&&el.center.lat, lon=el.lon!=null?el.lon:el.center&&el.center.lon; if(lat==null)return;
@@ -233,7 +234,7 @@ map.on('moveend',()=>{clearTimeout(osmTimer);osmTimer=setTimeout(loadSites,450)}
 
 function chips(t){
   const c=[];
-  if(t.site_type)c.push(TYPES[t.site_type]||t.site_type.replace(/_/g,' '));
+  if(siteType(t))c.push(siteType(t));
   ['historic:civilization','historic:period','historic:era','start_date'].forEach(k=>{if(t[k])c.push(t[k].replace(/_/g,' '))});
   if(t.heritage||t['ref:nid']||t['heritage:operator'])c.push('zabytek rejestrowy');
   return c.length?'<div class="chips">'+c.map(x=>'<span class="chip">'+esc(x)+'</span>').join('')+'</div>':'';
@@ -315,35 +316,25 @@ async function nidInfo(e){
   else bbox=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].join(',');
   const base=NID+'?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS='+encodeURIComponent(nidCfg.layers)+'&QUERY_LAYERS='+encodeURIComponent(nidCfg.layers)+
     '&STYLES=&SRS='+nidCfg.srs+'&BBOX='+bbox+'&WIDTH='+sz.x+'&HEIGHT='+sz.y+'&X='+Math.round(p.x)+'&Y='+Math.round(p.y)+'&FEATURE_COUNT=5&INFO_FORMAT=';
-  for(const fmt of ['text/html','text/xml','text/plain']){
-    let txt; try{const r=await fetch(base+encodeURIComponent(fmt));if(!r.ok)continue;txt=await r.text()}catch(err){return}
-    if(!txt||/ServiceException/i.test(txt))continue;
-    const rows=parseInfo(txt,fmt); if(!rows.length)return;
-    const nameRow=rows.find(r=>/nazwa|name|obiekt/i.test(r[0]));
-    showCard(nameRow?nameRow[1]:'Zabytek archeologiczny w rejestrze',
-      '<div class="chips"><span class="chip reg">rejestr zabytków</span></div>'+
-      '<table class="kv">'+rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td></tr>').join('')+'</table>'+
-      '<p class="note">Teren zabytku wpisanego do rejestru. Poszukiwania w tym miejscu wymagają pozwolenia wojewódzkiego konserwatora zabytków.</p>'+
-      '<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+e.latlng.lat+','+e.latlng.lng+'">Prowadź</a></div>');
-    return;
-  }
+  let txt; try{const r=await fetch(base+'text/xml');if(!r.ok)return;txt=await r.text()}catch(err){return}
+  if(!txt||/ServiceException/i.test(txt))return;
+  const feats=parseInfo(txt); if(!feats.length)return;
+  const ll=e.latlng;
+  showCard(feats[0].siteName||'Zabytek archeologiczny w rejestrze',
+    feats.map((f,i)=>(i?'<div><p class="eyebrow">'+esc(f.siteName||'Kolejny wpis')+'</p>':'<div>')+
+      '<div class="chips"><span class="chip reg">rejestr zabytków</span>'+(f.siteProtectionClassification==='archaeological'?'<span class="chip">stanowisko archeologiczne</span>':'')+'</div>'+
+      '<table class="kv">'+NIDF.filter(k=>f[k[0]]).map(k=>'<tr><td>'+k[1]+'</td><td>'+esc(k[2]?k[2](f[k[0]]):f[k[0]])+'</td></tr>').join('')+'</table></div>').join('')+
+    '<p class="note">Teren zabytku wpisanego do rejestru. Poszukiwania w tym miejscu wymagają pozwolenia wojewódzkiego konserwatora zabytków.</p>'+
+    '<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+ll.lat+','+ll.lng+'">Prowadź</a></div>'+
+    '<p class="note">'+ll.lat.toFixed(5)+', '+ll.lng.toFixed(5)+'</p>');
 }
-function parseInfo(txt,fmt){
-  const rows=[], seen=new Set(), add=(k,v)=>{k=(k||'').trim();v=(v||'').trim();if(k&&v&&v!=='Null'&&!seen.has(k+v)&&rows.length<40){seen.add(k+v);rows.push([k,v])}};
-  if(fmt==='text/plain'){txt.split(/\n/).forEach(l=>{const m=l.match(/^\s*([^=:]+?)\s*[=:]\s*(.+)$/);if(m)add(m[1],m[2].replace(/^'|'$/g,''))});return rows}
-  const doc=new DOMParser().parseFromString(txt,fmt==='text/html'?'text/html':'text/xml');
-  if(fmt==='text/html'){
-    doc.querySelectorAll('table').forEach(tb=>{const tr=[...tb.querySelectorAll('tr')];if(tr.length<2)return;
-      const head=[...tr[0].children].map(c=>c.textContent);
-      if(tr[0].querySelector('th')&&head.length>2)tr.slice(1).forEach(r=>[...r.children].forEach((c,i)=>add(head[i],c.textContent)));
-      else tr.forEach(r=>{if(r.children.length===2)add(r.children[0].textContent,r.children[1].textContent)})});
-    return rows;
-  }
-  doc.querySelectorAll('*').forEach(el=>{
-    if(!el.children.length&&el.textContent.trim())add(el.localName,el.textContent);
-    [...el.attributes].forEach(a=>{if(!/^xmlns|schemaLocation|version/i.test(a.name)&&!/^(FIELDS|FeatureInfoResponse)$/i.test(a.name))add(a.name,a.value)});
-  });
-  return rows.filter(r=>!/^(shape|objectid|geometry|fid)/i.test(r[0]));
+const NIDF=[['siteName','Nazwa'],['legalFoundationDocument','Nr w rejestrze'],['legalFoundationDate','Data wpisu',v=>{const m=v.match(/^(\d\d)\/(\d\d)\/(\d{4})$/);return m?m[2]+'.'+m[1]+'.'+m[3]:v}],
+  ['percentageUnderDesignation','Ochrona obszaru',v=>v+'%'],['inspireID','Identyfikator NID']];
+function parseInfo(txt){
+  const doc=new DOMParser().parseFromString(txt,'text/xml');
+  return [...doc.getElementsByTagNameNS('*','Layer')].map(l=>{const f={};
+    [...l.getElementsByTagNameNS('*','Attribute')].forEach(a=>{const v=a.textContent.replace(/\s+/g,' ').replace(/[;\s]+$/,'').trim();if(v)f[a.getAttribute('Name')]=v});return f})
+    .filter(f=>Object.keys(f).length);
 }
 map.on('click',e=>{if(!$('layers').hidden||!$('card').hidden){closeSheets();return}nidInfo(e)});
 
