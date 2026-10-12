@@ -10,18 +10,18 @@
 /* Układ: mapa na cały ekran, wąska belka u góry, panel warstw i karta stanowiska wysuwane od dołu (obsługa kciukiem). */
 :root{
   --bg:#f3f1ea; --surface:#fbfaf6; --ink:#1d2420; --muted:#5d665f; --line:#d5d2c4;
-  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --ok:#2f6b3c; --warn:#9a5b00;
+  --accent:#8a3b12; --accent-ink:#fff; --site:#c26a00; --reg:#c62828; --road:#6d3fb0; --ok:#2f6b3c; --warn:#9a5b00;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --shadow:0 6px 24px rgba(20,25,20,.22);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#b48cf0; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141815; --surface:#1d231f; --ink:#e9ece6; --muted:#a2aba3; --line:#343c36;
-  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --ok:#7fc98f; --warn:#e9b45a;
+  --accent:#e08a4f; --accent-ink:#1a1206; --site:#f0a030; --reg:#ff6b6b; --road:#b48cf0; --ok:#7fc98f; --warn:#e9b45a;
   --shadow:0 6px 24px rgba(0,0,0,.6); color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -73,6 +73,8 @@ table.kv td:first-child{color:var(--muted);width:38%}
 .row .lab small{display:block;color:var(--muted);font-size:13px}
 .dot{width:14px;height:14px;border-radius:50%;flex:none;background:var(--site);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--site)}
 .dot.reg{border-radius:3px;background:var(--reg);box-shadow:0 0 0 1px var(--reg)}
+.dot.road{border-radius:2px;height:6px;width:18px;background:var(--road);box-shadow:none;border:0}
+.dot.lidar{border-radius:3px;background:linear-gradient(135deg,#eee,#777);box-shadow:0 0 0 1px var(--line)}
 .row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .seg button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px 4px;font:600 14px/1 var(--display);letter-spacing:.05em;text-transform:uppercase}
@@ -117,6 +119,15 @@ table.kv td:first-child{color:var(--muted);width:38%}
         <span class="lab">Rejestr zabytków archeologicznych<small>Zasięgi stanowisk wpisanych do rejestru, dane NID. Dotknij obszaru, żeby zobaczyć wpis.</small>
         <span class="state" id="stNid">Łączę z usługą NID…</span></span>
         <input type="checkbox" id="chkNid" checked></label>
+    </div>
+    <div class="group">
+      <p class="eyebrow">2 · Dawne szlaki (XVI–XIX w.)</p>
+      <label class="row"><span class="dot road"></span>
+        <span class="lab">Główne trakty<small>Najważniejsze drogi handlowe i pocztowe. Linia łączy miasta na trasie, więc przebieg jest przybliżony. Dotknij linii, żeby zobaczyć opis.</small></span>
+        <input type="checkbox" id="chkRoads" checked></label>
+      <label class="row"><span class="dot lidar"></span>
+        <span class="lab">Rzeźba terenu (LIDAR)<small>Cieniowany model terenu z Geoportalu. Widać na nim wąwozy i nasypy dawnych dróg, także tych, których nie ma na żadnej mapie.</small></span>
+        <input type="checkbox" id="chkLidar"></label>
     </div>
     <p class="note">Kolejne warstwy pojawią się tutaj.</p>
   </div>
@@ -316,7 +327,7 @@ async function initNid(){
     }).catch(e=>done(e,c));
     return c;
   }});
-  nidLayer=new RedWMS(NID,{layers:nidCfg.layers,format:'image/png',transparent:true,version:'1.1.1',opacity:1,maxZoom:20,
+  nidLayer=new RedWMS(NID,{layers:nidCfg.layers,format:'image/png',transparent:true,version:'1.1.1',opacity:1,maxZoom:20,zIndex:6,
     crs:nidCfg.srs==='EPSG:4326'?L.CRS.EPSG4326:L.CRS.EPSG3857,attribution:'Rejestr zabytków © NID'});
   $('stNid').className='state ok';$('stNid').textContent='Połączono z usługą NID.';
   if($('chkNid').checked)nidLayer.addTo(map);
@@ -350,12 +361,61 @@ function parseInfo(txt){
 }
 map.on('click',e=>{if(!$('layers').hidden||!$('card').hidden){closeSheets();return}nidInfo(e)});
 
+
+/* ================= WARSTWA 2: dawne szlaki XVI–XIX w. ================= */
+const TOWNS={"Zgorzelec": [51.1518, 15.0144], "Bolesławiec": [51.2622, 15.555], "Chojnów": [51.2723, 15.9335], "Legnica": [51.2048, 16.1747], "Środa Śląska": [51.1639, 16.5943], "Wrocław": [51.109, 17.0327], "Oława": [50.9571, 17.2903], "Brzeg": [50.8615, 17.4705], "Opole": [50.6668, 17.9236], "Gliwice": [50.3011, 18.6623], "Bytom": [50.3653, 18.8723], "Będzin": [50.3231, 19.1322], "Olkusz": [50.2788, 19.5596], "Kraków": [50.0619, 19.9369], "Wieliczka": [49.9824, 20.0602], "Bochnia": [49.9747, 20.4253], "Brzesko": [49.9678, 20.6068], "Tarnów": [50.0126, 20.9881], "Pilzno": [49.9786, 21.2908], "Dębica": [50.0461, 21.4128], "Ropczyce": [50.0529, 21.6116], "Rzeszów": [50.0375, 22.0047], "Łańcut": [50.0696, 22.2335], "Przeworsk": [50.0602, 22.4924], "Jarosław": [50.0159, 22.6797], "Radymno": [49.9517, 22.8183], "Przemyśl": [49.7823, 22.775], "Medyka": [49.8058, 22.9375], "Bielsko-Biała": [49.8121, 19.0292], "Kęty": [49.8829, 19.2239], "Andrychów": [49.8556, 19.3437], "Wadowice": [49.8834, 19.4925], "Gdów": [49.9085, 20.1996], "Warszawa": [52.2477, 21.0136], "Tarczyn": [51.9803, 20.834], "Grójec": [51.8655, 20.8675], "Białobrzegi": [51.6467, 20.9511], "Radom": [51.4027, 21.1471], "Szydłowiec": [51.2239, 20.8575], "Kielce": [50.872, 20.631], "Chęciny": [50.8001, 20.4622], "Jędrzejów": [50.6394, 20.3046], "Miechów": [50.3566, 20.0277], "Słomniki": [50.2404, 20.0811], "Mińsk Mazowiecki": [52.1812, 21.5587], "Kałuszyn": [52.2088, 21.8119], "Siedlce": [52.1664, 22.2765], "Międzyrzec Podlaski": [51.9853, 22.7842], "Biała Podlaska": [52.029, 23.1494], "Terespol": [52.0756, 23.6134], "Radzymin": [52.4176, 21.1808], "Wyszków": [52.5928, 21.4585], "Ostrów Mazowiecka": [52.8071, 21.8796], "Zambrów": [52.9855, 22.2412], "Łomża": [53.1824, 22.0522], "Szczuczyn": [53.563, 22.2855], "Grajewo": [53.6399, 22.4578], "Augustów": [53.845, 23.0184], "Suwałki": [54.1028, 22.9321], "Garwolin": [51.8973, 21.615], "Ryki": [51.6267, 21.9357], "Kurów": [51.3889, 22.1862], "Lublin": [51.2482, 22.5701], "Piaski": [51.1378, 22.8475], "Krasnystaw": [50.9918, 23.165], "Zamość": [50.7171, 23.2526], "Tomaszów Lubelski": [50.4479, 23.4292], "Bełżec": [50.3847, 23.4378], "Błonie": [52.1946, 20.617], "Sochaczew": [52.2297, 20.2379], "Łowicz": [52.1012, 19.9475], "Kutno": [52.2306, 19.3642], "Kłodawa": [52.2575, 18.9112], "Koło": [52.1984, 18.6358], "Konin": [52.2302, 18.2521], "Słupca": [52.2873, 17.8714], "Września": [52.3251, 17.5652], "Poznań": [52.4083, 16.9335], "Pniewy": [52.509, 16.2566], "Trzciel": [52.3652, 15.8732], "Świebodzin": [52.2498, 15.5325], "Słubice": [52.3557, 14.5662], "Krosno": [49.6886, 21.7706], "Dukla": [49.5553, 21.6833], "Barwinek": [49.4319, 21.7019]};
+const ROADS=[
+ {name:'Via Regia (Droga Królewska)',period:'XIII–XVIII w.',towns:['Zgorzelec','Bolesławiec','Chojnów','Legnica','Środa Śląska','Wrocław','Oława','Brzeg','Opole','Gliwice','Bytom','Będzin','Olkusz','Kraków'],
+  desc:'Najważniejszy szlak handlowy łączący Europę Zachodnią z Rusią. Biegł z Lipska przez Görlitz i Śląsk do Krakowa, dalej na Lwów. Tędy jeździli kupcy, posłowie i wojska.'},
+ {name:'Trakt Kraków – Lwów (Trakt Cesarski)',period:'XV–XIX w.',towns:['Kraków','Wieliczka','Bochnia','Brzesko','Tarnów','Pilzno','Dębica','Ropczyce','Rzeszów','Łańcut','Przeworsk','Jarosław','Radymno','Przemyśl','Medyka'],
+  desc:'Wschodnia część Via Regia. Po rozbiorach Austriacy przebudowali ją na drogę bitą, ukończoną w 1785 r. jako Trakt Środkowogalicyjski, zwany Cesarskim. Straciła znaczenie po otwarciu kolei galicyjskiej w 1861 r.'},
+ {name:'Trakt Cesarski – odcinek Biała – Bochnia',period:'1781–XIX w.',towns:['Bielsko-Biała','Kęty','Andrychów','Wadowice','Gdów','Bochnia'],
+  desc:'Pierwszy odcinek galicyjskiej drogi bitej, oddany w 1781 r. Łączył Śląsk Cieszyński z traktem na Lwów.'},
+ {name:'Trakt krakowski (Warszawa – Kraków)',period:'XVI–XIX w.',towns:['Warszawa','Tarczyn','Grójec','Białobrzegi','Radom','Szydłowiec','Kielce','Chęciny','Jędrzejów','Miechów','Słomniki','Kraków'],
+  desc:'Główna droga między Warszawą a Krakowem, szczególnie ważna od przeniesienia dworu królewskiego do Warszawy na przełomie XVI i XVII w. W XIX w. przebudowana na szosę.'},
+ {name:'Trakt brzeski (Warszawa – Brześć)',period:'XVI–XIX w.',towns:['Warszawa','Mińsk Mazowiecki','Kałuszyn','Siedlce','Międzyrzec Podlaski','Biała Podlaska','Terespol'],
+  desc:'Droga z Warszawy na Litwę i Ruś przez Podlasie. W latach 20. XIX w. przebudowana na jedną z pierwszych nowoczesnych szos Królestwa Polskiego.'},
+ {name:'Trakt kowieński (w stronę Petersburga)',period:'XVIII–XIX w.',towns:['Warszawa','Radzymin','Wyszków','Ostrów Mazowiecka','Zambrów','Łomża','Szczuczyn','Grajewo','Augustów','Suwałki'],
+  desc:'Droga z Warszawy na północny wschód, ku Kownu. W XIX w. przebudowana na szosę, która była częścią połączenia z Petersburgiem.'},
+ {name:'Trakt lubelski i lwowski',period:'XV–XIX w.',towns:['Warszawa','Garwolin','Ryki','Kurów','Lublin','Piaski','Krasnystaw','Zamość','Tomaszów Lubelski','Bełżec'],
+  desc:'Droga z Warszawy do Lublina, miasta jarmarków i Trybunału Koronnego, a dalej przez Zamość ku Lwowowi. Jeden z głównych szlaków handlowych Korony. W XIX w. odcinek do Lublina przebudowano na szosę.'},
+ {name:'Trakt poznański (Warszawa – Poznań – Berlin)',period:'XVI–XIX w.',towns:['Warszawa','Błonie','Sochaczew','Łowicz','Kutno','Kłodawa','Koło','Konin','Słupca','Września','Poznań','Pniewy','Trzciel','Świebodzin','Słubice'],
+  desc:'Główna droga na zachód, do Frankfurtu nad Odrą i Berlina. Tędy jeździła poczta i kupcy z Wielkopolski. W XIX w. przebudowana na szosę.'},
+ {name:'Szlak węgierski (winny) przez Przełęcz Dukielską',period:'XV–XVIII w.',towns:['Krosno','Dukla','Barwinek'],
+  desc:'Droga przez Przełęcz Dukielską, którą sprowadzano wino węgierskie. Krosno było jego głównym składem, a Dukla ważną komorą celną.'}
+];
+const roadGroup=L.layerGroup();
+const roadRenderer=L.canvas({tolerance:12});
+ROADS.forEach(r=>{
+  const ll=r.towns.map(t=>TOWNS[t]).filter(Boolean);
+  L.polyline(ll,{renderer:roadRenderer,color:'#fff',weight:8,opacity:.75,interactive:false}).addTo(roadGroup);
+  const line=L.polyline(ll,{renderer:roadRenderer,color:css('--road')||'#6d3fb0',weight:4,opacity:.95,dashArray:'10 6',bubblingMouseEvents:false}).addTo(roadGroup);
+  line.on('click',e=>openRoad(r,e.latlng));
+  r.line=line;
+});
+function openRoad(r,at){
+  openKey='road:'+r.name;
+  let near='';
+  if(at){let best=null,bd=1e12;r.towns.forEach(t=>{const p=TOWNS[t];if(!p)return;const d=map.distance(at,p);if(d<bd){bd=d;best=t}});
+    if(best)near='<p class="note">Najbliższe miasto na trakcie: '+esc(best)+' ('+(bd/1000).toFixed(1).replace('.',',')+' km)</p>'}
+  showCard(r.name,
+    '<div class="chips"><span class="chip">'+esc(r.period)+'</span><span class="chip">przebieg przybliżony</span></div>'+
+    '<p class="txt">'+esc(r.desc)+'</p>'+
+    '<div><p class="eyebrow">Miasta na trasie</p><p class="txt">'+r.towns.map(esc).join(' → ')+'</p></div>'+near+
+    '<p class="note">Linia łączy miasta prosto, a dawna droga mogła odbiegać od niej o kilka kilometrów. Dokładny ślad szukaj na warstwie LIDAR i na starych mapach.</p>');
+}
+const lidar=L.tileLayer.wms('https://mapy.geoportal.gov.pl/wss/service/PZGIK/NMT/GRID1/WMS/ShadedRelief',{layers:'Raster',format:'image/png',transparent:true,version:'1.1.1',opacity:.7,maxZoom:20,zIndex:3,attribution:'NMT © GUGiK'});
+
 /* ---------- przełączniki warstw ---------- */
 $('chkOsm').checked=store.get('osm',true); $('chkNid').checked=store.get('nid',true);
 function applyOsm(){if($('chkOsm').checked){osmGroup.addTo(map);loadSites()}else{map.removeLayer(osmGroup);refreshStatus()}store.set('osm',$('chkOsm').checked)}
 $('chkOsm').addEventListener('change',applyOsm);
 $('chkNid').addEventListener('change',()=>{store.set('nid',$('chkNid').checked);if(!nidLayer)return;$('chkNid').checked?nidLayer.addTo(map):map.removeLayer(nidLayer)});
-applyOsm(); initNid();
+$('chkRoads').checked=store.get('roads',true); $('chkLidar').checked=store.get('lidar',false);
+function applyRoads(){$('chkRoads').checked?roadGroup.addTo(map):map.removeLayer(roadGroup);store.set('roads',$('chkRoads').checked)}
+function applyLidar(){if($('chkLidar').checked)lidar.addTo(map);else map.removeLayer(lidar);store.set('lidar',$('chkLidar').checked)}
+$('chkRoads').addEventListener('change',applyRoads); $('chkLidar').addEventListener('change',applyLidar);
+applyRoads(); applyLidar(); applyOsm(); initNid();
 })();
 </script>
 </body>
