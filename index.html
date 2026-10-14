@@ -252,7 +252,7 @@ map.on('moveend',()=>{const c=map.getCenter();store.set('view',{c:[c.lat,c.lng],
 
 const bases={
   mapa:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),
-  orto:L.tileLayer.wms('https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/StandardResolution',{layers:'Raster',format:'image/jpeg',version:'1.1.1',maxZoom:20,attribution:'Ortofotomapa © GUGiK'}),
+  orto:L.tileLayer.wms('https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/HighResolution',{layers:'Raster',format:'image/jpeg',version:'1.1.1',maxZoom:20,attribution:'Ortofotomapa © GUGiK'}),
   topo:L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenStreetMap, SRTM, © OpenTopoMap'})
 };
 let baseName=store.get('base','mapa'); if(!bases[baseName])baseName='mapa';
