@@ -62,6 +62,20 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
 .sumt tr.sub td:first-child{padding-left:32px}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 
+.fab.add{bottom:calc(108px + env(safe-area-inset-bottom,0px));background:#ffcc00;border-color:#111}
+.fab.add svg{stroke:#111;stroke-width:2.6}
+.fab.add[aria-pressed=true]{background:#111}.fab.add[aria-pressed=true] svg{stroke:#ffcc00}
+.mypin{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#ffcc00;border:3px solid #111;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+.mypin.c-znalezisko{background:#ffcc00}.mypin.c-miejscowka{background:#7cd34f}.mypin.c-sprawdzic{background:#fff}.mypin.c-inne{background:#a8c6ff}
+.dot.my{background:#ffcc00;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 0 0 2px #111}
+.chip.my{border-color:#111;background:#ffcc00;color:#111;font-weight:600}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font:600 12px/1 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.field input,.field textarea,.field select{font:400 16px/1.35 var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+.field textarea{min-height:110px;resize:vertical}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.btn.danger{border-color:#b3261e;color:#b3261e}
+.btn.danger.sure{background:#b3261e;color:#fff}
 .fab{position:fixed;z-index:900;right:12px;bottom:calc(46px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:50%;
   border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);display:grid;place-items:center}
 .fab svg{width:24px;height:24px;stroke:var(--ink);fill:none;stroke-width:2}
@@ -148,6 +162,7 @@ table.kv td:first-child{color:var(--muted);width:38%}
   <button class="qc" type="button" data-chk="chkOsm"><span class="dot"></span><span>Stanowiska</span></button>
   <button class="qc" type="button" data-chk="chkNid"><span class="sw-area"></span><span>Rejestr NID</span></button>
   <button class="qc" type="button" data-chk="chkZea"><span class="dot zea"></span><span>ZABYTKI.PL</span></button>
+  <button class="qc" type="button" data-chk="chkMy"><span class="dot my"></span><span>Moje punkty</span></button>
   <button class="qc" type="button" data-chk="chkGold"><span class="dot gold"></span><span>Skarby</span></button>
   <button class="qc" type="button" data-chk="chkInn"><span class="dot inn"></span><span>Karczmy</span></button>
   <button class="qc" type="button" data-chk="chkCastle"><span class="dot castle"></span><span>Pałace i zamki</span></button>
@@ -165,6 +180,9 @@ table.kv td:first-child{color:var(--muted);width:38%}
   <ul id="searchList"></ul>
 </div>
 <div class="status" id="status">Ładuję mapę…</div>
+<button class="fab add" id="btnAdd" type="button" aria-label="Dodaj własny punkt" aria-pressed="false">
+  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+</button>
 <button class="fab" id="btnLocate" type="button" aria-label="Pokaż moją pozycję">
   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
 </button>
@@ -197,6 +215,20 @@ table.kv td:first-child{color:var(--muted);width:38%}
         <span class="lab">Ewidencja zabytków archeologicznych<small>Te same stanowiska co na mapie zabytek.pl: setki tysięcy miejsc z badań AZP, z datowaniem i funkcją. Dane NID. Widoczne po przybliżeniu mapy do ok. 2 km na podziałce. Dotknij punktu, żeby zobaczyć opis.</small>
         <span class="state" id="stZea"></span></span>
         <input type="checkbox" id="chkZea" checked></label>
+    </div>
+    <div class="group">
+      <p class="eyebrow">Moje punkty</p>
+      <label class="row"><span class="dot my"></span>
+        <span class="lab">Własne punkty<small>Zapisane tylko w pamięci tego telefonu, nikt inny ich nie widzi. Dodajesz je żółtym przyciskiem z plusem.</small>
+        <span class="state" id="stMy"></span></span>
+        <input type="checkbox" id="chkMy" checked></label>
+      <div class="acts">
+        <button class="btn" type="button" id="myExport">Zapisz kopię</button>
+        <button class="btn" type="button" id="myGpx">Plik GPX</button>
+        <button class="btn" type="button" id="myImportBtn">Wczytaj kopię</button>
+        <input type="file" id="myImport" accept=".json,application/json" hidden>
+      </div>
+      <p class="note">Zapisuj kopię co jakiś czas. Wyczyszczenie danych przeglądarki albo zmiana telefonu usuwa punkty, a z kopii odtworzysz je jednym dotknięciem. Plik GPX otworzysz w aplikacjach nawigacyjnych.</p>
     </div>
     <div class="group">
       <p class="eyebrow">5 · Skarby</p>
@@ -248,6 +280,22 @@ table.kv td:first-child{color:var(--muted);width:38%}
   <div class="body"><div id="sumBody"></div></div>
 </section>
 
+<section class="sheet" id="pointForm" hidden aria-label="Własny punkt">
+  <header><h2 id="pfTitle">Nowy punkt</h2><button class="x" type="button" data-close="pointForm" aria-label="Zamknij">×</button></header>
+  <form class="body" id="pf">
+    <div class="field"><label for="pfName">Nazwa</label><input id="pfName" maxlength="80" placeholder="np. Pole za młynem" required></div>
+    <div class="field"><label for="pfCat">Rodzaj</label>
+      <select id="pfCat"><option value="znalezisko">Znalezisko</option><option value="miejscowka">Miejscówka</option><option value="sprawdzic">Do sprawdzenia</option><option value="inne">Inne</option></select></div>
+    <div class="field"><label for="pfDesc">Opis</label><textarea id="pfDesc" maxlength="4000" placeholder="Co tu jest, co znalazłeś, głębokość, zgoda właściciela…"></textarea></div>
+    <p class="note" id="pfCoords"></p>
+    <div class="acts">
+      <button class="btn primary" type="submit">Zapisz</button>
+      <button class="btn" type="button" id="pfGps">Ustaw w mojej pozycji</button>
+      <button class="btn" type="button" data-close="pointForm">Anuluj</button>
+    </div>
+  </form>
+</section>
+
 <section class="sheet" id="card" hidden aria-label="Stanowisko">
   <header><h2 id="cardTitle"></h2><button class="x" type="button" data-close="card" aria-label="Zamknij">×</button></header>
   <div class="body" id="cardBody"></div>
@@ -283,7 +331,7 @@ setBase(baseName);
 $('baseSeg').addEventListener('click',e=>{const b=e.target.closest('button[data-base]');if(b)setBase(b.dataset.base)});
 
 /* ---------- panele ---------- */
-const SHEETS=['layers','card','summary'];
+const SHEETS=['layers','card','summary','pointForm'];
 function openSheet(id){SHEETS.forEach(s=>{$(s).hidden=s!==id})}
 function closeSheets(){SHEETS.forEach(s=>{$(s).hidden=true})}
 function anyOpen(){return SHEETS.some(s=>!$(s).hidden)}
@@ -570,7 +618,7 @@ function parseInfo(txt){
     [...l.getElementsByTagNameNS('*','Attribute')].forEach(a=>{const v=a.textContent.replace(/\s+/g,' ').replace(/[;\s]+$/,'').trim();if(v)f[a.getAttribute('Name')]=v});return f})
     .filter(f=>Object.keys(f).length);
 }
-map.on('click',e=>{if(!$('searchBox').hidden){$('searchBox').hidden=true;return}if(anyOpen()){closeSheets();return}mapInfo(e)});
+map.on('click',e=>{if(addMode){setAddMode(false);openForm(null,{lat:e.latlng.lat,lon:e.latlng.lng});return}if(!$('searchBox').hidden){$('searchBox').hidden=true;return}if(anyOpen()){closeSheets();return}mapInfo(e)});
 
 
 /* ================= WARSTWA 2: dawne szlaki XVI–XIX w. ================= */
@@ -814,6 +862,108 @@ fetch('data/palace_zamki.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new E
   gate(); if(!$('summary').hidden)renderSummary();
 }).catch(()=>{$('stCastle').className='state warn';$('stCastle').textContent='Lista pałaców i zamków jest jeszcze przygotowywana. Spróbuj za kilka minut.'});
 
+
+/* ================= MOJE PUNKTY (zapis tylko w pamięci tego urządzenia) ================= */
+const MYKEY='myPoints', myGroup=L.layerGroup(); let myPoints=[], addMode=false, editId=null, pfPos=null;
+const MYCAT={znalezisko:'znalezisko',miejscowka:'miejscówka',sprawdzic:'do sprawdzenia',inne:'inne'};
+try{myPoints=JSON.parse(localStorage.getItem(MYKEY)||'[]')}catch(e){myPoints=[]}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+function saveMy(){
+  try{localStorage.setItem(MYKEY,JSON.stringify(myPoints));return true}
+  catch(e){status('Nie udało się zapisać punktu w pamięci telefonu. Zapisz kopię do pliku.');return false}
+}
+const fmtDate=t=>new Date(t).toLocaleString('pl-PL',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
+function drawMy(){
+  myGroup.clearLayers();
+  myPoints.forEach(p=>{
+    const m=L.marker([p.lat,p.lon],{icon:L.divIcon({className:'',html:'<div class="mypin c-'+p.cat+'"></div>',iconSize:[26,26],iconAnchor:[13,30]}),title:p.name,zIndexOffset:900});
+    m.on('click',()=>openMy(p.id)); m.addTo(myGroup);
+  });
+  $('stMy').className='state ok'; $('stMy').textContent=myPoints.length?('Zapisanych punktów: '+myPoints.length+'.'):'Nie masz jeszcze własnych punktów.';
+}
+function openMy(id){
+  const p=myPoints.find(x=>x.id===id); if(!p)return; openKey='my:'+id;
+  let h='<div class="chips"><span class="chip my">mój punkt</span><span class="chip">'+MYCAT[p.cat]+'</span></div>';
+  if(p.desc)h+='<p class="txt">'+esc(p.desc)+'</p>';
+  h+='<p class="note">Dodany '+fmtDate(p.created)+(p.updated&&p.updated!==p.created?', zmieniony '+fmtDate(p.updated):'')+'</p>';
+  h+='<div class="acts"><button class="btn primary" type="button" id="myEdit">Edytuj</button><button class="btn" type="button" id="myCopy">Kopiuj współrzędne</button><button class="btn danger" type="button" id="myDel">Usuń</button></div>';
+  h+='<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+p.lat+','+p.lon+'">Prowadź</a></div>';
+  h+='<p class="note" id="myCoords">'+p.lat.toFixed(6)+', '+p.lon.toFixed(6)+'</p>';
+  showCard(p.name,h);
+  $('myEdit').onclick=()=>openForm(p);
+  $('myCopy').onclick=()=>{const t=p.lat.toFixed(6)+', '+p.lon.toFixed(6);
+    (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{$('myCopy').textContent='Skopiowano'})
+      .catch(()=>{const r=document.createRange();r.selectNodeContents($('myCoords'));const sel=getSelection();sel.removeAllRanges();sel.addRange(r)})};
+  $('myDel').onclick=()=>{const b=$('myDel');
+    if(!b.classList.contains('sure')){b.classList.add('sure');b.textContent='Na pewno usunąć?';setTimeout(()=>{if(b.isConnected){b.classList.remove('sure');b.textContent='Usuń'}},4000);return}
+    myPoints=myPoints.filter(x=>x.id!==id); saveMy(); drawMy(); closeSheets(); status('Usunięto punkt „'+p.name+'”.')};
+}
+function setAddMode(on){
+  addMode=on; $('btnAdd').setAttribute('aria-pressed',on);
+  $('map').style.cursor=on?'crosshair':'';
+  if(on){closeSheets();$('searchBox').hidden=true;status('<b>Dotknij mapy</b> w miejscu nowego punktu. Ponowne dotknięcie żółtego przycisku anuluje.')}
+  else refreshStatus();
+}
+function pfCoords(){$('pfCoords').textContent='Położenie: '+pfPos.lat.toFixed(6)+', '+pfPos.lon.toFixed(6)}
+function openForm(p,pos){
+  editId=p?p.id:null; pfPos=p?{lat:p.lat,lon:p.lon}:pos;
+  $('pfTitle').textContent=p?'Edytuj punkt':'Nowy punkt';
+  $('pfName').value=p?p.name:''; $('pfDesc').value=p?p.desc:''; $('pfCat').value=p?p.cat:(store.get('lastCat','znalezisko'));
+  pfCoords(); openSheet('pointForm'); setTimeout(()=>$('pfName').focus(),80);
+}
+$('btnAdd').addEventListener('click',()=>setAddMode(!addMode));
+map.on('contextmenu',e=>{setAddMode(false);openForm(null,{lat:e.latlng.lat,lon:e.latlng.lng})});  // przytrzymanie palca na mapie
+$('pfGps').addEventListener('click',()=>{
+  if(!navigator.geolocation){$('pfCoords').textContent='Ta przeglądarka nie udostępnia lokalizacji.';return}
+  $('pfCoords').textContent='Ustalam pozycję…';
+  navigator.geolocation.getCurrentPosition(g=>{pfPos={lat:g.coords.latitude,lon:g.coords.longitude};pfCoords();$('pfCoords').textContent+=' (dokładność ok. '+Math.round(g.coords.accuracy)+' m)'},
+    ()=>{pfCoords();$('pfCoords').textContent+=' – nie udało się ustalić pozycji GPS.'},{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+});
+$('pf').addEventListener('submit',ev=>{
+  ev.preventDefault();
+  const name=$('pfName').value.trim()||'Punkt bez nazwy', now=Date.now();
+  const data={name,desc:$('pfDesc').value.trim(),cat:$('pfCat').value,lat:+pfPos.lat.toFixed(7),lon:+pfPos.lon.toFixed(7),updated:now};
+  store.set('lastCat',data.cat);
+  if(editId){const p=myPoints.find(x=>x.id===editId);Object.assign(p,data)}
+  else myPoints.push(Object.assign({id:'p'+now.toString(36)+Math.random().toString(36).slice(2,6),created:now},data));
+  if(saveMy()){drawMy(); if(!$('chkMy').checked){$('chkMy').checked=true;$('chkMy').dispatchEvent(new Event('change'))}
+    closeSheets(); status('Zapisano punkt „'+name+'”.')}
+});
+/* kopia do pliku i wczytywanie kopii */
+function download(name,text,type){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name;
+  document.body.append(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+const stamp=()=>new Date().toISOString().slice(0,10);
+$('myExport').addEventListener('click',()=>{
+  if(!myPoints.length){status('Nie masz jeszcze punktów do zapisania.');return}
+  download('moje-punkty-'+stamp()+'.json',JSON.stringify({app:'mapa-detektorysty',version:1,saved:new Date().toISOString(),points:myPoints},null,1),'application/json');
+});
+$('myGpx').addEventListener('click',()=>{
+  if(!myPoints.length){status('Nie masz jeszcze punktów do zapisania.');return}
+  const x=t=>String(t).replace(/[<>&'"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
+  const gpx='<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Mapa detektorysty" xmlns="http://www.topografix.com/GPX/1/1">\n'+
+    myPoints.map(p=>'<wpt lat="'+p.lat+'" lon="'+p.lon+'"><time>'+new Date(p.created).toISOString()+'</time><name>'+x(p.name)+'</name><desc>'+x(p.desc||'')+'</desc><type>'+x(MYCAT[p.cat])+'</type></wpt>').join('\n')+'\n</gpx>\n';
+  download('moje-punkty-'+stamp()+'.gpx',gpx,'application/gpx+xml');
+});
+$('myImportBtn').addEventListener('click',()=>$('myImport').click());
+$('myImport').addEventListener('change',()=>{
+  const f=$('myImport').files[0]; if(!f)return;
+  f.text().then(t=>{
+    const d=JSON.parse(t), pts=(d.points||d).filter(p=>p&&isFinite(p.lat)&&isFinite(p.lon));
+    let added=0,changed=0;
+    pts.forEach(p=>{const q={id:String(p.id||('p'+Math.random().toString(36).slice(2))),name:String(p.name||'Punkt bez nazwy').slice(0,80),desc:String(p.desc||'').slice(0,4000),
+      cat:MYCAT[p.cat]?p.cat:'inne',lat:+p.lat,lon:+p.lon,created:+p.created||Date.now(),updated:+p.updated||+p.created||Date.now()};
+      const old=myPoints.find(x=>x.id===q.id);
+      if(!old){myPoints.push(q);added++} else if(q.updated>(old.updated||0)){Object.assign(old,q);changed++}});
+    saveMy(); drawMy(); status('Wczytano kopię: '+added+' nowych punktów'+(changed?', '+changed+' zaktualizowanych':'')+'.');
+  }).catch(()=>status('To nie jest plik kopii punktów z tej mapy.')).finally(()=>{$('myImport').value=''});
+});
+$('chkMy').checked=store.get('my',true);
+$('chkMy').addEventListener('change',()=>{$('chkMy').checked?myGroup.addTo(map):map.removeLayer(myGroup);store.set('my',$('chkMy').checked)});
+if($('chkMy').checked)myGroup.addTo(map);
+drawMy();
+
 /* ---------- podsumowanie: ile obiektów każdej warstwy w widoku i w całej Polsce ---------- */
 const fmt=n=>n.toLocaleString('pl-PL');
 function roadKm(r,b){let km=0;for(let i=1;i<r.towns.length;i++){const a=TOWNS[r.towns[i-1]],c=TOWNS[r.towns[i]];if(!a||!c)continue;
@@ -842,6 +992,7 @@ function renderSummary(){
     (()=>{const g={all:{},inv:{}};castles.forEach(v=>{const k=CASTK[v.k]+(v.ruin?' (ruina)':'');g.all[k]=(g.all[k]||0)+1;if(vb.contains(v.m.getLatLng()))g.inv[k]=(g.inv[k]||0)+1});return subs(g)})()+
     row('<span class="dot inn"></span>','Karczmy',view(inns.filter(v=>vb.contains(v.m.getLatLng())).length),fmt(inns.length))+
     (()=>{const g={all:{},inv:{}};inns.forEach(v=>{const k=INNK[v.x.k];g.all[k]=(g.all[k]||0)+1;if(vb.contains(v.m.getLatLng()))g.inv[k]=(g.inv[k]||0)+1});return subs(g)})()+
+    row('<span class="dot my"></span>','Moje punkty',fmt(myPoints.filter(p=>vb.contains([p.lat,p.lon])).length),fmt(myPoints.length))+
     row('<span class="dot gold"></span>','Skarby',fmt(golds.filter(x=>vb.contains(x.m.getLatLng())).length),fmt(golds.length))+
     row('<span class="sw-road"></span>','Dawne trakty',fmt(rIn),fmt(ROADS.length))+
     '<tr class="sub"><td>kamienie milowe i wąwozy</td><td>'+view(roadMarks.getLayers().filter(m=>vb.contains(m.getLatLng())).length)+'</td><td>'+fmt(roadMarkN)+'</td></tr>'+
