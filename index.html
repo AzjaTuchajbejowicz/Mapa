@@ -39,6 +39,18 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
   font:600 15px/1 var(--display);letter-spacing:.06em;text-transform:uppercase}
 .bar .btn{padding:9px 11px}
 @media (max-width:440px){.bar h1{font-size:0;flex:1}.bar h1::before{content:'Mapa';font-size:19px}}
+@media (max-width:400px){.bar h1::before{content:''}.bar .btn{padding:9px 9px;font-size:14px}}
+.bar .btn.icon{padding:7px 9px;display:grid;place-items:center}
+.bar .btn.icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.2}
+.search{position:fixed;z-index:1050;left:0;right:0;top:calc(52px + env(safe-area-inset-top,0px));background:var(--surface);
+  border-bottom:1px solid var(--line);box-shadow:var(--shadow);padding:8px 12px;display:flex;flex-direction:column;gap:8px}
+.search form{display:flex;gap:8px}
+.search input{flex:1;min-width:0;font:400 16px/1.2 var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.search ul{list-style:none;margin:0;padding:0;max-height:50vh;overflow:auto;display:flex;flex-direction:column}
+.search li button{width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;padding:10px 4px}
+.search li b{display:block;font-weight:600}
+.search li small{display:block;color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.search .msg{margin:0;font-size:13px;color:var(--muted)}
 .sumt{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 .sumt th{white-space:nowrap;font:600 12px/1 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:right;padding:0 0 8px 8px}
 .sumt th:first-child{text-align:left;padding-left:0}
@@ -127,6 +139,7 @@ table.kv td:first-child{color:var(--muted);width:38%}
 
 <div class="bar">
   <h1>Mapa detektorysty</h1>
+  <button class="btn icon" id="btnSearch" type="button" aria-label="Wyszukaj miejscowość"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></button>
   <button class="btn" id="btnSum" type="button">Podsumowanie</button>
   <button class="btn primary" id="btnLayers" type="button">Warstwy</button>
 </div>
@@ -143,6 +156,14 @@ table.kv td:first-child{color:var(--muted);width:38%}
   <button class="qc" type="button" data-chk="chkWater"><span class="dot mill"></span><span>Młyny</span></button>
   <button class="qc" type="button" data-chk="chkWind"><span class="dot mill ring"></span><span>Wiatraki</span></button>
 </nav>
+<div class="search" id="searchBox" hidden>
+  <form id="searchForm" role="search">
+    <input id="q" type="search" placeholder="Wpisz miejscowość albo współrzędne" autocomplete="off" enterkeyhint="search" aria-label="Wyszukaj miejscowość">
+    <button class="btn primary" type="submit">Szukaj</button>
+  </form>
+  <p class="msg" id="searchMsg" hidden></p>
+  <ul id="searchList"></ul>
+</div>
 <div class="status" id="status">Ładuję mapę…</div>
 <button class="fab" id="btnLocate" type="button" aria-label="Pokaż moją pozycję">
   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
@@ -270,6 +291,43 @@ $('btnLayers').addEventListener('click',()=>{$('layers').hidden?openSheet('layer
 $('btnSum').addEventListener('click',()=>{if($('summary').hidden){renderSummary();openSheet('summary')}else closeSheets()});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-close]');if(b)$(b.dataset.close).hidden=true});
 function showCard(title,html){$('cardTitle').textContent=title;$('cardBody').innerHTML=html;$('cardBody').scrollTop=0;openSheet('card')}
+
+
+/* ---------- wyszukiwanie miejscowości (OpenStreetMap Nominatim) ---------- */
+let searchPin=null;
+function goTo(lat,lon,label,bbox){
+  if(searchPin)map.removeLayer(searchPin);
+  searchPin=L.circleMarker([lat,lon],{radius:12,color:'#e11d48',weight:3,fill:false,interactive:false}).addTo(map);
+  if(label)searchPin.bindTooltip(label,{permanent:true,direction:'top',offset:[0,-12]});
+  if(bbox){const b=L.latLngBounds([+bbox[0],+bbox[2]],[+bbox[1],+bbox[3]]);map.fitBounds(b,{maxZoom:15,padding:[20,20]})}
+  else map.setView([lat,lon],15);
+  $('searchBox').hidden=true; $('q').blur();
+}
+function searchMsg(t){$('searchMsg').hidden=!t;$('searchMsg').textContent=t||''}
+const TYP={city:'miasto',town:'miasto',village:'wieś',hamlet:'przysiółek',suburb:'część miasta',neighbourhood:'osiedle',isolated_dwelling:'osada',locality:'miejsce',farm:'kolonia',administrative:'jednostka administracyjna',quarter:'część miejscowości',river:'rzeka',stream:'strumień',lake:'jezioro',forest:'las',wood:'las',peak:'szczyt',hill:'wzgórze'};
+$('btnSearch').addEventListener('click',()=>{const box=$('searchBox');box.hidden=!box.hidden;closeSheets();if(!box.hidden)setTimeout(()=>$('q').focus(),50)});
+$('searchForm').addEventListener('submit',async ev=>{
+  ev.preventDefault(); const q=$('q').value.trim(); $('searchList').innerHTML='';
+  if(q.length<2){searchMsg('Wpisz co najmniej 2 znaki.');return}
+  const c=q.replace(/,/g,' ').split(/\s+/).map(Number);
+  if(c.length===2&&c.every(n=>isFinite(n))&&Math.abs(c[0])<=90){goTo(c[0],c[1],q);return}  // np. 52.1234, 19.5678
+  searchMsg('Szukam…');
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&countrycodes=pl&accept-language=pl&addressdetails=0&q='+encodeURIComponent(q));
+    if(!r.ok)throw new Error(r.status);
+    const res=await r.json();
+    if(!res.length){searchMsg('Nie znaleziono „'+q+'”. Sprawdź pisownię albo dopisz gminę lub powiat, np. „Brzezie, gmina Opatówek”.');return}
+    if(res.length===1){const x=res[0];goTo(+x.lat,+x.lon,x.name||q,x.boundingbox);searchMsg('');return}
+    searchMsg('Wybierz miejsce:');
+    res.forEach(x=>{
+      const li=document.createElement('li'), b=document.createElement('button'); b.type='button';
+      const nm=document.createElement('b'); nm.textContent=(x.name||x.display_name.split(',')[0])+(TYP[x.type]?' · '+TYP[x.type]:'');
+      const sm=document.createElement('small'); sm.textContent=x.display_name.split(',').slice(1).map(s=>s.trim()).filter(s=>!/^\d\d-\d{3}$|^Polska$/.test(s)).join(', ');
+      b.append(nm,sm); b.addEventListener('click',()=>{goTo(+x.lat,+x.lon,x.name||q,x.boundingbox);searchMsg('')});
+      li.append(b); $('searchList').append(li);
+    });
+  }catch(e){searchMsg('Wyszukiwarka nie odpowiada. Sprawdź internet i spróbuj ponownie.')}
+});
 
 /* ---------- moja pozycja ---------- */
 let meMarker=null,meCircle=null;
@@ -512,7 +570,7 @@ function parseInfo(txt){
     [...l.getElementsByTagNameNS('*','Attribute')].forEach(a=>{const v=a.textContent.replace(/\s+/g,' ').replace(/[;\s]+$/,'').trim();if(v)f[a.getAttribute('Name')]=v});return f})
     .filter(f=>Object.keys(f).length);
 }
-map.on('click',e=>{if(anyOpen()){closeSheets();return}mapInfo(e)});
+map.on('click',e=>{if(!$('searchBox').hidden){$('searchBox').hidden=true;return}if(anyOpen()){closeSheets();return}mapInfo(e)});
 
 
 /* ================= WARSTWA 2: dawne szlaki XVI–XIX w. ================= */
