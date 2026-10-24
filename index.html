@@ -1095,6 +1095,7 @@ const NMWHY={obronne:'Nazwy typu Zamczysko, Grodzisko czy Okopy zostają zwykle 
 function openName(x){
   openKey='nm:'+x.n+x.lat;
   let h='<div class="chips"><span class="chip nm">'+esc(NMC[x.c])+'</span>'+(x.r?'<span class="chip">'+esc(x.r)+'</span>':'')+'</div>';
+  if(/dawna miejscowo/i.test(x.r))h+='<p class="txt">To miejsce opuszczonej wsi, osady, folwarku albo młyna. Dawne siedliska to jedne z najlepszych miejsc do poszukiwań, ale sprawdź, czy nie są wpisane do ewidencji zabytków (warstwa ZABYTKI.PL).</p>';
   if(x.h)h+='<p class="txt">Nazwa historyczna: <b>'+esc(x.h)+'</b></p>';
   if(x.o)h+='<p class="txt">Inna nazwa: '+esc(x.o)+'</p>';
   if(x.i)h+='<p class="txt">'+esc(x.i)+'</p>';

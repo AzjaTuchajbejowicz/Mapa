@@ -20,11 +20,11 @@ CATS = [
 CATS = [(k, re.compile(v)) for k, v in CATS]
 
 
-def col(head, *keys):
-    for i, h in enumerate(head):
-        hl = (h or "").lower()
-        if all(k in hl for k in keys):
-            return i
+def col(head, *names):
+    """Indeks kolumny o dokładnej nazwie (pierwsza pasująca z listy)."""
+    low = [(h or "").strip().lower() for h in head]
+    for n in names:
+        if n in low: return low.index(n)
     return None
 
 
@@ -53,10 +53,10 @@ ws = wb[wb.sheetnames[0]]
 rows = ws.iter_rows(values_only=True)
 head = [str(h or "") for h in next(rows)]
 C = {
-    "name": col(head, "nazwa g"), "hist": col(head, "historyczn"), "obo": col(head, "oboczn"),
-    "kind": col(head, "rodzaj obiektu"), "cat": col(head, "kategoria"), "info": col(head, "informacje"),
-    "msc": col(head, "miejscowo", "nadrz"), "gm": col(head, "nazwa gminy"), "pw": col(head, "powiatu"),
-    "wj": col(head, "wojew"), "xy": col(head, "wgs"), "repr": col(head, "rodzaj punktu"),
+    "name": col(head, "nazwa główna"), "hist": col(head, "nazwa historyczna"), "obo": col(head, "nazwa oboczna"),
+    "kind": col(head, "rodzaj obiektu"), "cat": col(head, "kategoria obiektu"), "info": col(head, "informacje dodatkowe"),
+    "msc": col(head, "nazwa miejscowości nadrzędnej", "miejscowość nadrzędna"), "gm": col(head, "gmina"), "pw": col(head, "powiat"),
+    "wj": col(head, "województwo"), "xy": col(head, "współrzędne geograficzne", "współrzędne geograficzne w wgs84"),
 }
 probe = {"file": name, "header": head, "cols": C, "sample": [], "kinds": collections.Counter()}
 g = lambda r, k: (str(r[C[k]]).strip() if C[k] is not None and C[k] < len(r) and r[C[k]] not in (None, "") else "")
@@ -68,7 +68,9 @@ for r in rows:
     kind = g(r, "kind"); probe["kinds"][kind] += 1
     nm, hist, obo = g(r, "name"), g(r, "hist"), g(r, "obo")
     text = " ".join([nm, hist, obo]).lower()
-    cat = next((k for k, rx in CATS if rx.search(text)), None)
+    kl = kind.lower()
+    cat = ("osadnicze" if "dawna miejscowo" in kl else "obronne" if kl in ("grodzisko", "szaniec") else
+           "pochowki" if kl in ("kopiec", "kurhan", "mogiła") else None) or next((k for k, rx in CATS if rx.search(text)), None)
     if not cat: continue
     if cat == "kamienie" and "pomnik" not in kind.lower() and "głaz" not in kind.lower(): continue
     ll = parse_coords(g(r, "xy"))
