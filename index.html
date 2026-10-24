@@ -204,6 +204,10 @@ table.kv td:first-child{color:var(--muted);width:38%}
         <button type="button" data-base="orto" aria-pressed="false">Ortofoto</button>
         <button type="button" data-base="topo" aria-pressed="false">Teren</button>
       </div>
+      <div class="oldsel" id="ortoYearBox" hidden>
+        <select id="ortoYear" aria-label="Rok zdjęcia lotniczego"></select>
+        <p class="note">Zdjęcia z różnych lat pokazują ślady w uprawach (wyróżniki roślinne) dawnych dróg, osad i fundamentów, które w innym roku są niewidoczne. Jeśli obraz jest pusty, w tym roku nie fotografowano tego obszaru.</p>
+      </div>
     </div>
     <div class="group">
       <p class="eyebrow">1 · Stanowiska archeologiczne</p>
@@ -344,7 +348,18 @@ const bases={
   topo:L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenStreetMap, SRTM, © OpenTopoMap'})
 };
 let baseName=store.get('base','mapa'); if(!bases[baseName])baseName='mapa';
-function setBase(n){Object.values(bases).forEach(l=>map.removeLayer(l));bases[n].addTo(map).bringToBack();baseName=n;store.set('base',n);
+/* ortofotomapa z wybranego roku (archiwum Geoportalu od 1997 r.) */
+const ORTO_T='https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/StandardResolutionTime';
+(function(){const y=new Date().getFullYear(), o=['<option value="">Najnowsze zdjęcia</option>'];for(let i=y;i>=1997;i--)o.push('<option value="'+i+'">Zdjęcia z '+i+' r.</option>');$('ortoYear').innerHTML=o.join('')})();
+$('ortoYear').value=store.get('ortoYear','');
+function ortoLayer(){
+  const y=$('ortoYear').value;
+  if(!y)return L.tileLayer.wms('https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/HighResolution',{layers:'Raster',format:'image/jpeg',version:'1.1.1',maxZoom:20,attribution:'Ortofotomapa © GUGiK'});
+  return L.tileLayer.wms(ORTO_T,{layers:'Raster',styles:'default',format:'image/jpeg',version:'1.1.1',maxZoom:20,TIME:y+'-01-01T00:00:00.000Z/'+y+'-12-31T23:59:59.000Z',attribution:'Ortofotomapa archiwalna '+y+' © GUGiK'});
+}
+$('ortoYear').addEventListener('change',()=>{store.set('ortoYear',$('ortoYear').value);map.removeLayer(bases.orto);bases.orto=ortoLayer();if(baseName==='orto')setBase('orto')});
+bases.orto=ortoLayer();
+function setBase(n){Object.values(bases).forEach(l=>map.removeLayer(l));bases[n].addTo(map).bringToBack();baseName=n;store.set('base',n);$('ortoYearBox').hidden=n!=='orto';
   document.querySelectorAll('#baseSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.base===n))}
 setBase(baseName);
 $('baseSeg').addEventListener('click',e=>{const b=e.target.closest('button[data-base]');if(b)setBase(b.dataset.base)});
@@ -715,6 +730,8 @@ const OLDMAPS=[
   ['kummersberg_3857','1855','Mapa administracyjna Galicji 1:115 200','Galicja',[18.6,24.2,48.8,50.8]],
   ['chrzanowski_3857','1859','Karta Dawnej Polski 1:300 000','cała dawna Rzeczpospolita',m2d(1324895,4261777,5750526,8008605)],
   ['reymann_3857','2. poł. XIX w.','Mapa Reymanna 1:200 000','Europa Środkowa',m2d(1434029,2853627,6306301,7364489)],
+  ['dwuwiorstowka_3857','1908–1936','Dwuwiorstówka 1:84 000 (rosyjska, bardzo szczegółowa)','dawny zabór rosyjski: Mazowsze, Podlasie, Lubelskie',[17.7,28.5,48.5,56.0]],
+  ['kdwr_3857','1914–1921','Karte des Westlichen Russlands 1:100 000','dawny zabór rosyjski',[17.3,27.3,50.0,57.7]],
   ['m25k_3857','1870–1945','Messtischblätter 1:25 000 (najdokładniejsza)','dawny zabór pruski i Niemcy',[14.0,24.7,49.4,55.9]],
   ['kdr_3857','ok. 1900','Karte des Deutschen Reiches 1:100 000','dawny zabór pruski i Niemcy',[5.8,23.3,47.2,56.0]],
   ['wig25k_3857','1918–1939','Mapa szczegółowa WIG 1:25 000','II Rzeczpospolita, dla porównania',[15.7,27.3,49.2,55.0]],
