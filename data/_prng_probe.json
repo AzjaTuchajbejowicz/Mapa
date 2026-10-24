@@ -1,0 +1,482 @@
+{
+ "files": [
+  "Export danych PRNG z dnia 2026-10-23",
+  "PRNG_legenda_nazwy kolumn_XLS SHP GML.XLSX",
+  "PRNG_OBIEKTY_FIZJOGRAFICZNE_XLSX.xlsx"
+ ],
+ "sheets": [
+  "nazwy atrybutów"
+ ],
+ "header": [
+  "Uwaga:\nw GML rodzaj geometrii obiektów: multipoint;\nw SHP rodzaj geometrii obiektów: point - składowe obiektu PRNG rozdzielone według atrybutu „rodzajRepr” (punkt główny, punkt dodatkowy, punkt początkowy obiektu, punkt końcowy obiektu).\nPowyższe implikuje różnice w liczbie obiektów wyświetlanych w oprogramowaniu GIS pomiędzy formatem SHP a XLS lub GML.\n",
+  "None",
+  "None",
+  "None",
+  "None"
+ ],
+ "rows": 41,
+ "sample": [
+  [
+   "Opis atrybutu",
+   "Nazwy atrybutów\nGML",
+   "Nazwy atrybutów\nSHP",
+   "Nazwy atrybutów\nXLSX",
+   "None"
+  ],
+  [
+   "Identyfikator IIP",
+   "idiip",
+   "idIIP",
+   "identyfikator IIP",
+   "None"
+  ],
+  [
+   "Identyfikator obiektu",
+   "identyfikatorPRNG",
+   "idPRNG",
+   "identyfikator PRNG",
+   "None"
+  ],
+  [
+   "Nazwa główna",
+   "nazwaGlowna",
+   "nazwaGlown",
+   "nazwa główna",
+   "None"
+  ],
+  [
+   "Element rozróżniający",
+   "elementRozrozniajacy",
+   "elementRoz",
+   "element rozróżniający",
+   "None"
+  ],
+  [
+   "Element rodzajowy",
+   "elementRodzajowy",
+   "elementRod",
+   "element rodzajowy",
+   "None"
+  ],
+  [
+   "Dopełniacz",
+   "dopelniacz",
+   "dopelniacz",
+   "dopełniacz",
+   "None"
+  ],
+  [
+   "Przymiotnik",
+   "przymiotnik",
+   "przymiot",
+   "przymiotnik",
+   "None"
+  ]
+ ],
+ "top": {
+  "Uwaga:\nw GML rodzaj geometrii obiektów: multipoint;\nw SHP rodzaj geometrii obiektów: point - składowe obiektu PRNG rozdzielone według atrybutu „rodzajRepr” (punkt główny, punkt dodatkowy, punkt początkowy obiektu, punkt końcowy obiektu).\nPowyższe implikuje różnice w liczbie obiektów wyświetlanych w oprogramowaniu GIS pomiędzy formatem SHP a XLS lub GML.\n": [
+   [
+    "Opis atrybutu",
+    1
+   ],
+   [
+    "Identyfikator IIP",
+    1
+   ],
+   [
+    "Identyfikator obiektu",
+    1
+   ],
+   [
+    "Nazwa główna",
+    1
+   ],
+   [
+    "Element rozróżniający",
+    1
+   ],
+   [
+    "Element rodzajowy",
+    1
+   ],
+   [
+    "Dopełniacz",
+    1
+   ],
+   [
+    "Przymiotnik",
+    1
+   ],
+   [
+    "Status nazwy",
+    1
+   ],
+   [
+    "Kategoria obiektu",
+    1
+   ],
+   [
+    "Rodzaj obiektu",
+    1
+   ],
+   [
+    "Nazwa miejscowości nadrzędnej",
+    1
+   ],
+   [
+    "Identyfikator miejscowości nadrzędnej",
+    1
+   ],
+   [
+    "Informacje dodatkowe",
+    1
+   ],
+   [
+    "System zewnętrzny, którego dotyczy Identyfikator zewnętrzny",
+    1
+   ],
+   [
+    "Identyfikator zewnętrzny",
+    1
+   ],
+   [
+    "Źródło informacji - tytuł",
+    1
+   ],
+   [
+    "Źródło informacji - data",
+    1
+   ],
+   [
+    "Źródło informacji - wydawca",
+    1
+   ],
+   [
+    "Reprezentacja obiektu - rodzaj punktu",
+    1
+   ],
+   [
+    "Reprezentacja obiektu - identyfikator TERYT dla gminy",
+    1
+   ],
+   [
+    "Reprezentacja obiektu - nazwa gminy",
+    1
+   ],
+   [
+    "Reprezentacja obiektu - nazwa powiatu",
+    1
+   ],
+   [
+    "Reprezentacja obiektu - nazwa województwa",
+    1
+   ],
+   [
+    "Reprezentacja obiektu - współrzędne geograficzne w WGS84",
+    1
+   ],
+   [
+    "Reprezentacja obiektu - współrzędne prostokątne XY w układzi",
+    1
+   ],
+   [
+    "Nazwa oboczna",
+    1
+   ],
+   [
+    "Nazwa historyczna",
+    1
+   ],
+   [
+    "Nazwy dodatkowe - nazwa dodatkowa",
+    1
+   ],
+   [
+    "Nazwy dodatkowe - nazwa języka, w którym została określona n",
+    1
+   ],
+   [
+    "Nazwy dodatkowe -  zapis zlatynizowany nazwy dodatkowej",
+    1
+   ],
+   [
+    "Endonimy - endonim",
+    1
+   ],
+   [
+    "Endonimy - nazwa języka, w którym została określony endonim",
+    1
+   ],
+   [
+    "Endonimy - zapis zlatynizowany endonimu",
+    1
+   ],
+   [
+    "Egzonimy - egzonim",
+    1
+   ],
+   [
+    "Egzonimy - nazwa języka, w którym została określony egzonimu",
+    1
+   ],
+   [
+    "Egzonimy - zapis zlatynizowany egzonimu",
+    1
+   ],
+   [
+    "Data i czas wprowadzenia danej wersji obiektu",
+    1
+   ],
+   [
+    "Wersja obiektu",
+    1
+   ],
+   [
+    "Ważna od",
+    1
+   ]
+  ],
+  "None": [
+   [
+    "gmina",
+    3
+   ],
+   [
+    "powiat",
+    3
+   ],
+   [
+    "nazwa",
+    3
+   ],
+   [
+    "jezyk",
+    3
+   ],
+   [
+    "latynizacja",
+    3
+   ],
+   [
+    "dopelniacz",
+    2
+   ],
+   [
+    "przymiotnik",
+    2
+   ],
+   [
+    "endonim",
+    2
+   ],
+   [
+    "egzonim",
+    2
+   ],
+   [
+    "waznaOd",
+    2
+   ],
+   [
+    "Nazwy atrybutów\nGML",
+    1
+   ],
+   [
+    "Nazwy atrybutów\nSHP",
+    1
+   ],
+   [
+    "Nazwy atrybutów\nXLSX",
+    1
+   ],
+   [
+    "idiip",
+    1
+   ],
+   [
+    "idIIP",
+    1
+   ],
+   [
+    "identyfikator IIP",
+    1
+   ],
+   [
+    "identyfikatorPRNG",
+    1
+   ],
+   [
+    "idPRNG",
+    1
+   ],
+   [
+    "identyfikator PRNG",
+    1
+   ],
+   [
+    "nazwaGlowna",
+    1
+   ],
+   [
+    "nazwaGlown",
+    1
+   ],
+   [
+    "nazwa główna",
+    1
+   ],
+   [
+    "elementRozrozniajacy",
+    1
+   ],
+   [
+    "elementRoz",
+    1
+   ],
+   [
+    "element rozróżniający",
+    1
+   ],
+   [
+    "elementRodzajowy",
+    1
+   ],
+   [
+    "elementRod",
+    1
+   ],
+   [
+    "element rodzajowy",
+    1
+   ],
+   [
+    "dopełniacz",
+    1
+   ],
+   [
+    "przymiot",
+    1
+   ],
+   [
+    "statusNazwy",
+    1
+   ],
+   [
+    "statusNazw",
+    1
+   ],
+   [
+    "status nazwy",
+    1
+   ],
+   [
+    "kategoriaObiektu",
+    1
+   ],
+   [
+    "kategoria",
+    1
+   ],
+   [
+    "kategoria obiektu",
+    1
+   ],
+   [
+    "rodzajObiektu",
+    1
+   ],
+   [
+    "rodzaj",
+    1
+   ],
+   [
+    "rodzaj obiektu",
+    1
+   ],
+   [
+    "nazwaMiejscowosciNadrzednej",
+    1
+   ],
+   [
+    "nazwaMscNd",
+    1
+   ],
+   [
+    "nazwa miejscowości nadrzędnej",
+    1
+   ],
+   [
+    "identyfikatorMiejscowosciNadrzednej",
+    1
+   ],
+   [
+    "idMscNd",
+    1
+   ],
+   [
+    "identyfikator miejscowości nadrzędnej",
+    1
+   ],
+   [
+    "informacjeDodatkowe",
+    1
+   ],
+   [
+    "informDod",
+    1
+   ],
+   [
+    "informacje dodatkowe",
+    1
+   ],
+   [
+    "systemZewn",
+    1
+   ],
+   [
+    "system zewnętrzny",
+    1
+   ],
+   [
+    "identyfikatorZewnetrzny",
+    1
+   ],
+   [
+    "idZewnetrz",
+    1
+   ],
+   [
+    "identyfikator zewnętrzny",
+    1
+   ],
+   [
+    "tytul",
+    1
+   ],
+   [
+    "zrodloTyt",
+    1
+   ],
+   [
+    "tytuł dokumentu źródłowego",
+    1
+   ],
+   [
+    "data",
+    1
+   ],
+   [
+    "zrodloData",
+    1
+   ],
+   [
+    "data dokumentu źródłowego",
+    1
+   ],
+   [
+    "wydawca",
+    1
+   ]
+  ]
+ }
+}
