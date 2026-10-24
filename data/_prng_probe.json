@@ -46,11 +46,10 @@
   "cat": 7,
   "info": 9,
   "msc": null,
-  "gm": null,
-  "pw": null,
+  "gm": 31,
+  "pw": 30,
   "wj": 29,
-  "xy": null,
-  "repr": null
+  "xy": 16
  },
  "sample": [
   [
@@ -567,5 +566,38 @@
   ]
  ],
  "rows": 131494,
- "found": []
+ "found": [
+  [
+   "osadnicze",
+   2923
+  ],
+  [
+   "gospodarcze",
+   1594
+  ],
+  [
+   "obronne",
+   1507
+  ],
+  [
+   "drogi",
+   1115
+  ],
+  [
+   "pochowki",
+   361
+  ],
+  [
+   "wojna",
+   355
+  ],
+  [
+   "skarby",
+   267
+  ],
+  [
+   "kamienie",
+   171
+  ]
+ ]
 }
