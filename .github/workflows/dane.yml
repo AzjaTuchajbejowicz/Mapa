@@ -7,6 +7,7 @@ on:
       - scripts/skarby.py
       - scripts/karczmy.py
       - scripts/ohm_drogi.py
+      - scripts/nazwy.py
       - scripts/wikidata.py
       - scripts/wzmianki.py
       - scripts/polacz.py
@@ -55,6 +56,9 @@ jobs:
       - name: Dawne drogi z OpenHistoricalMap
         continue-on-error: true
         run: python3 scripts/ohm_drogi.py
+      - name: Dawne nazwy terenowe (PRNG)
+        continue-on-error: true
+        run: pip install -q openpyxl && python3 scripts/nazwy.py
       - name: Zbierz karczmy z Wikipedii
         continue-on-error: true
         run: python3 scripts/karczmy.py
