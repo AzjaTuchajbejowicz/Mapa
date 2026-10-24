@@ -721,6 +721,18 @@ const OLDMAPS=[
   ['wig100k_3857','1918–1939','Mapa taktyczna WIG 1:100 000','II Rzeczpospolita, dla porównania',[12.8,28.8,47.8,56.0]]
 ];
 let oldLayer=null;
+/* Kafelki starych map: brakujące arkusze serwer wypełnia jaskrawą zielenią albo czystą bielą/czernią – robię je przezroczyste. */
+const OldWMS=L.TileLayer.WMS.extend({createTile(coords,done){
+  const c=document.createElement('canvas'),s=this.getTileSize(); c.width=s.x; c.height=s.y;
+  fetch(this.getTileUrl(coords)).then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()}).then(b=>createImageBitmap(b)).then(bm=>{
+    const x=c.getContext('2d'); x.drawImage(bm,0,0,s.x,s.y);
+    const im=x.getImageData(0,0,s.x,s.y),d=im.data;
+    for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2];
+      if((g>180&&r<140&&b<140&&g-r>90)||(r>250&&g>250&&b>250)||(r<6&&g<6&&b<6))d[i+3]=0}
+    x.putImageData(im,0,0); done(null,c);
+  }).catch(e=>done(e,c));
+  return c;
+}});
 const covers=(bb,ll)=>ll.lng>=bb[0]&&ll.lng<=bb[1]&&ll.lat>=bb[2]&&ll.lat<=bb[3];
 function fillOldPick(){
   const c=map.getCenter(), cur=$('oldPick').value||store.get('oldMap','');
@@ -734,7 +746,7 @@ function applyOld(){
   store.set('old',$('chkOld').checked); store.set('oldMap',$('oldPick').value);
   if(!$('chkOld').checked){fillOldPick();return}
   const m=OLDMAPS.find(x=>x[0]===$('oldPick').value), b=m[4];
-  oldLayer=L.tileLayer.wms(PASTMAPS,{layers:'ihpan:'+m[0],format:'image/jpeg',version:'1.1.1',tileSize:512,
+  oldLayer=new OldWMS(PASTMAPS,{layers:'ihpan:'+m[0],format:'image/jpeg',version:'1.1.1',tileSize:512,
     opacity:+$('oldOp').value/100,maxZoom:20,zIndex:4,bounds:L.latLngBounds([b[2],b[0]],[b[3],b[1]]),
     attribution:'Stare mapy © Instytut Historii PAN, Mapy z przeszłością'}).addTo(map);
   fillOldPick();
