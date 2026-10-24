@@ -1099,7 +1099,8 @@ function openName(x){
   if(x.h)h+='<p class="txt">Nazwa historyczna: <b>'+esc(x.h)+'</b></p>';
   if(x.o)h+='<p class="txt">Inna nazwa: '+esc(x.o)+'</p>';
   if(x.i)h+='<p class="txt">'+esc(x.i)+'</p>';
-  h+='<table class="kv">'+[['Miejscowość',x.m],['Gmina',x.g],['Powiat',x.p],['Województwo',x.w]].filter(r=>r[1]).map(r=>'<tr><td>'+r[0]+'</td><td>'+esc(r[1])+'</td></tr>').join('')+'</table>';
+  const cl=v=>[...new Set(String(v||'').split(/;\s*/).map(t=>t.replace(/-(gmina|powiat|województwo).*$/i,'').trim()).filter(Boolean))].join(', ');
+  h+='<table class="kv">'+[['Miejscowość',cl(x.m)],['Gmina',cl(x.g)],['Powiat',cl(x.p)],['Województwo',cl(x.w)]].filter(r=>r[1]).map(r=>'<tr><td>'+r[0]+'</td><td>'+esc(r[1])+'</td></tr>').join('')+'</table>';
   h+='<p class="note">'+NMWHY[x.c]+' Punkt wskazuje środek nazwanego miejsca, więc samo znalezisko może leżeć w promieniu kilkuset metrów.</p>';
   h+='<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+x.lat+','+x.lon+'">Prowadź</a></div><p class="note">'+x.lat.toFixed(5)+', '+x.lon.toFixed(5)+'</p>';
   showCard(x.n,h);
