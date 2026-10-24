@@ -1,482 +1,571 @@
 {
- "files": [
-  "Export danych PRNG z dnia 2026-10-23",
-  "PRNG_legenda_nazwy kolumn_XLS SHP GML.XLSX",
-  "PRNG_OBIEKTY_FIZJOGRAFICZNE_XLSX.xlsx"
- ],
- "sheets": [
-  "nazwy atrybutów"
- ],
+ "file": "PRNG_OBIEKTY_FIZJOGRAFICZNE_XLSX.xlsx",
  "header": [
-  "Uwaga:\nw GML rodzaj geometrii obiektów: multipoint;\nw SHP rodzaj geometrii obiektów: point - składowe obiektu PRNG rozdzielone według atrybutu „rodzajRepr” (punkt główny, punkt dodatkowy, punkt początkowy obiektu, punkt końcowy obiektu).\nPowyższe implikuje różnice w liczbie obiektów wyświetlanych w oprogramowaniu GIS pomiędzy formatem SHP a XLS lub GML.\n",
-  "None",
-  "None",
-  "None",
-  "None"
+  "identyfikator IIP",
+  "identyfikator PRNG",
+  "nazwa główna",
+  "element rozróżniający",
+  "element rodzajowy",
+  "dopełniacz",
+  "status nazwy",
+  "kategoria obiektu",
+  "rodzaj obiektu",
+  "informacje dodatkowe",
+  "system zewnętrzny",
+  "identyfikator zewnętrzny",
+  "tytuł dokumentu źródłowego",
+  "data dokumentu źródłowego",
+  "wydawca dokumentu źródłowego",
+  "rodzaj reprezentacji",
+  "współrzędne geograficzne",
+  "współrzędne prostokątne XY",
+  "nazwa historyczna",
+  "nazwa oboczna",
+  "nazwa dodatkowa",
+  "język nazwy dodatkowej",
+  "latynizacja nazwy dodatkowej",
+  "endonim",
+  "język endonimu",
+  "latynizacja endonimu",
+  "egzonim",
+  "język egzonimu",
+  "latynizacja egzonimu",
+  "województwo",
+  "powiat",
+  "gmina",
+  "identyfikator gminy",
+  "początek wersji obiektu",
+  "wersja obiektu",
+  "ważna od"
  ],
- "rows": 41,
+ "cols": {
+  "name": 2,
+  "hist": 18,
+  "obo": 19,
+  "kind": 8,
+  "cat": 7,
+  "info": 9,
+  "msc": null,
+  "gm": null,
+  "pw": null,
+  "wj": 29,
+  "xy": null,
+  "repr": null
+ },
  "sample": [
   [
-   "Opis atrybutu",
-   "Nazwy atrybutów\nGML",
-   "Nazwy atrybutów\nSHP",
-   "Nazwy atrybutów\nXLSX",
-   "None"
+   "PL.PZGiK.320.NGRP.3",
+   "3",
+   "Łabędzicha",
+   "Łabędzicha",
+   "None",
+   "-chy",
+   "zestandaryzowana",
+   "pokrycie terenu",
+   "łąka",
+   "None",
+   "None",
+   "None",
+   "Mapa topograficzna w skali 1:10 000; Uchwała nr 28/IV/2021 Komisji Nazw Miejscow",
+   "2021-04-26",
+   "Komisja Nazw Miejscowości i Obiektów Fizjograficznych",
+   "punkt główny",
+   "52°53'35\" 21°28'32\"",
+   "666487.82 561478.98",
+   "",
+   "Abędzicha",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "mazowieckie",
+   "ostrołęcki",
+   "Goworowo-gmina wiejska",
+   "1415042",
+   "2022-03-25 13:45:46",
+   "2022-03-25 13:45:46",
+   "2014-05-12 00:00:00"
   ],
   [
-   "Identyfikator IIP",
-   "idiip",
-   "idIIP",
-   "identyfikator IIP",
-   "None"
+   "PL.PZGiK.320.NGRP.5",
+   "5",
+   "Abisynia",
+   "Abisynia",
+   "None",
+   "-nii",
+   "niestandaryzowana",
+   "pokrycie terenu",
+   "łąka",
+   "None",
+   "None",
+   "None",
+   "Mapa topograficzna w skali 1:10 000",
+   "",
+   "",
+   "punkt główny",
+   "52°24'07\" 17°20'23\"",
+   "387085.97 505299.3",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "wielkopolskie",
+   "poznański",
+   "Kostrzyn-gmina miejsko-wiejska",
+   "3021083",
+   "2022-03-25 13:48:53",
+   "2022-03-25 13:48:53",
+   "2019-03-07 00:00:00"
   ],
   [
-   "Identyfikator obiektu",
-   "identyfikatorPRNG",
-   "idPRNG",
-   "identyfikator PRNG",
-   "None"
+   "PL.PZGiK.320.NGRP.12",
+   "12",
+   "Abisynia",
+   "Abisynia",
+   "None",
+   "-nii",
+   "niestandaryzowana",
+   "pokrycie terenu",
+   "pola",
+   "None",
+   "None",
+   "None",
+   "Mapa topograficzna w skali 1:10 000",
+   "",
+   "",
+   "punkt główny",
+   "53°02'58\" 23°18'11\"",
+   "788280.47 584675.77",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "podlaskie",
+   "białostocki",
+   "Zabłudów-gmina miejsko-wiejska",
+   "2002143",
+   "2022-03-25 13:48:53",
+   "2022-03-25 13:48:53",
+   "2016-11-14 00:00:00"
   ],
   [
-   "Nazwa główna",
-   "nazwaGlowna",
-   "nazwaGlown",
-   "nazwa główna",
-   "None"
+   "PL.PZGiK.320.NGRP.17",
+   "17",
+   "Ablezonki",
+   "Ablezonki",
+   "None",
+   "-nek",
+   "zestandaryzowana",
+   "pokrycie terenu",
+   "pola",
+   "None",
+   "None",
+   "None",
+   "Uchwała nr 20/IX/2020 Komisji Nazw Miejscowości i Obiektów Fizjograficznych z dn",
+   "2020-09-29",
+   "Komisja Nazw Miejscowości i Obiektów Fizjograficznych",
+   "punkt główny",
+   "50°53'24\" 18°32'53\"",
+   "468222.2 335997.3",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "opolskie",
+   "oleski",
+   "Olesno-gmina miejsko-wiejska",
+   "1608033",
+   "2022-03-25 13:45:46",
+   "2022-03-25 13:45:46",
+   "2020-11-12 00:00:00"
   ],
   [
-   "Element rozróżniający",
-   "elementRozrozniajacy",
-   "elementRoz",
-   "element rozróżniający",
-   "None"
-  ],
-  [
-   "Element rodzajowy",
-   "elementRodzajowy",
-   "elementRod",
-   "element rodzajowy",
-   "None"
-  ],
-  [
-   "Dopełniacz",
-   "dopelniacz",
-   "dopelniacz",
-   "dopełniacz",
-   "None"
-  ],
-  [
-   "Przymiotnik",
-   "przymiotnik",
-   "przymiot",
-   "przymiotnik",
-   "None"
+   "PL.PZGiK.320.NGRP.18",
+   "18",
+   "Ablezonki",
+   "Ablezonki",
+   "None",
+   "-nek",
+   "zestandaryzowana",
+   "pokrycie terenu",
+   "część lasu",
+   "None",
+   "None",
+   "None",
+   "Uchwała Nr 31 27/V/2025 Komisji Nazw Miejscowości i Obiektów Fizjograficznych z ",
+   "2025-05-27",
+   "Komisja Nazw Miejscowości i Obiektów Fizjograficznych",
+   "punkt główny",
+   "50°31'58\" 18°30'29\"",
+   "465147.85 296314.45",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "śląskie",
+   "gliwicki",
+   "Wielowieś-gmina wiejska",
+   "2405082",
+   "2025-07-31 13:00:26",
+   "2025-07-31 13:00:26",
+   "2017-04-05 00:00:00"
   ]
  ],
- "top": {
-  "Uwaga:\nw GML rodzaj geometrii obiektów: multipoint;\nw SHP rodzaj geometrii obiektów: point - składowe obiektu PRNG rozdzielone według atrybutu „rodzajRepr” (punkt główny, punkt dodatkowy, punkt początkowy obiektu, punkt końcowy obiektu).\nPowyższe implikuje różnice w liczbie obiektów wyświetlanych w oprogramowaniu GIS pomiędzy formatem SHP a XLS lub GML.\n": [
-   [
-    "Opis atrybutu",
-    1
-   ],
-   [
-    "Identyfikator IIP",
-    1
-   ],
-   [
-    "Identyfikator obiektu",
-    1
-   ],
-   [
-    "Nazwa główna",
-    1
-   ],
-   [
-    "Element rozróżniający",
-    1
-   ],
-   [
-    "Element rodzajowy",
-    1
-   ],
-   [
-    "Dopełniacz",
-    1
-   ],
-   [
-    "Przymiotnik",
-    1
-   ],
-   [
-    "Status nazwy",
-    1
-   ],
-   [
-    "Kategoria obiektu",
-    1
-   ],
-   [
-    "Rodzaj obiektu",
-    1
-   ],
-   [
-    "Nazwa miejscowości nadrzędnej",
-    1
-   ],
-   [
-    "Identyfikator miejscowości nadrzędnej",
-    1
-   ],
-   [
-    "Informacje dodatkowe",
-    1
-   ],
-   [
-    "System zewnętrzny, którego dotyczy Identyfikator zewnętrzny",
-    1
-   ],
-   [
-    "Identyfikator zewnętrzny",
-    1
-   ],
-   [
-    "Źródło informacji - tytuł",
-    1
-   ],
-   [
-    "Źródło informacji - data",
-    1
-   ],
-   [
-    "Źródło informacji - wydawca",
-    1
-   ],
-   [
-    "Reprezentacja obiektu - rodzaj punktu",
-    1
-   ],
-   [
-    "Reprezentacja obiektu - identyfikator TERYT dla gminy",
-    1
-   ],
-   [
-    "Reprezentacja obiektu - nazwa gminy",
-    1
-   ],
-   [
-    "Reprezentacja obiektu - nazwa powiatu",
-    1
-   ],
-   [
-    "Reprezentacja obiektu - nazwa województwa",
-    1
-   ],
-   [
-    "Reprezentacja obiektu - współrzędne geograficzne w WGS84",
-    1
-   ],
-   [
-    "Reprezentacja obiektu - współrzędne prostokątne XY w układzi",
-    1
-   ],
-   [
-    "Nazwa oboczna",
-    1
-   ],
-   [
-    "Nazwa historyczna",
-    1
-   ],
-   [
-    "Nazwy dodatkowe - nazwa dodatkowa",
-    1
-   ],
-   [
-    "Nazwy dodatkowe - nazwa języka, w którym została określona n",
-    1
-   ],
-   [
-    "Nazwy dodatkowe -  zapis zlatynizowany nazwy dodatkowej",
-    1
-   ],
-   [
-    "Endonimy - endonim",
-    1
-   ],
-   [
-    "Endonimy - nazwa języka, w którym została określony endonim",
-    1
-   ],
-   [
-    "Endonimy - zapis zlatynizowany endonimu",
-    1
-   ],
-   [
-    "Egzonimy - egzonim",
-    1
-   ],
-   [
-    "Egzonimy - nazwa języka, w którym została określony egzonimu",
-    1
-   ],
-   [
-    "Egzonimy - zapis zlatynizowany egzonimu",
-    1
-   ],
-   [
-    "Data i czas wprowadzenia danej wersji obiektu",
-    1
-   ],
-   [
-    "Wersja obiektu",
-    1
-   ],
-   [
-    "Ważna od",
-    1
-   ]
+ "kinds": [
+  [
+   "część lasu",
+   18020
   ],
-  "None": [
-   [
-    "gmina",
-    3
-   ],
-   [
-    "powiat",
-    3
-   ],
-   [
-    "nazwa",
-    3
-   ],
-   [
-    "jezyk",
-    3
-   ],
-   [
-    "latynizacja",
-    3
-   ],
-   [
-    "dopelniacz",
-    2
-   ],
-   [
-    "przymiotnik",
-    2
-   ],
-   [
-    "endonim",
-    2
-   ],
-   [
-    "egzonim",
-    2
-   ],
-   [
-    "waznaOd",
-    2
-   ],
-   [
-    "Nazwy atrybutów\nGML",
-    1
-   ],
-   [
-    "Nazwy atrybutów\nSHP",
-    1
-   ],
-   [
-    "Nazwy atrybutów\nXLSX",
-    1
-   ],
-   [
-    "idiip",
-    1
-   ],
-   [
-    "idIIP",
-    1
-   ],
-   [
-    "identyfikator IIP",
-    1
-   ],
-   [
-    "identyfikatorPRNG",
-    1
-   ],
-   [
-    "idPRNG",
-    1
-   ],
-   [
-    "identyfikator PRNG",
-    1
-   ],
-   [
-    "nazwaGlowna",
-    1
-   ],
-   [
-    "nazwaGlown",
-    1
-   ],
-   [
-    "nazwa główna",
-    1
-   ],
-   [
-    "elementRozrozniajacy",
-    1
-   ],
-   [
-    "elementRoz",
-    1
-   ],
-   [
-    "element rozróżniający",
-    1
-   ],
-   [
-    "elementRodzajowy",
-    1
-   ],
-   [
-    "elementRod",
-    1
-   ],
-   [
-    "element rodzajowy",
-    1
-   ],
-   [
-    "dopełniacz",
-    1
-   ],
-   [
-    "przymiot",
-    1
-   ],
-   [
-    "statusNazwy",
-    1
-   ],
-   [
-    "statusNazw",
-    1
-   ],
-   [
-    "status nazwy",
-    1
-   ],
-   [
-    "kategoriaObiektu",
-    1
-   ],
-   [
-    "kategoria",
-    1
-   ],
-   [
-    "kategoria obiektu",
-    1
-   ],
-   [
-    "rodzajObiektu",
-    1
-   ],
-   [
-    "rodzaj",
-    1
-   ],
-   [
-    "rodzaj obiektu",
-    1
-   ],
-   [
-    "nazwaMiejscowosciNadrzednej",
-    1
-   ],
-   [
-    "nazwaMscNd",
-    1
-   ],
-   [
-    "nazwa miejscowości nadrzędnej",
-    1
-   ],
-   [
-    "identyfikatorMiejscowosciNadrzednej",
-    1
-   ],
-   [
-    "idMscNd",
-    1
-   ],
-   [
-    "identyfikator miejscowości nadrzędnej",
-    1
-   ],
-   [
-    "informacjeDodatkowe",
-    1
-   ],
-   [
-    "informDod",
-    1
-   ],
-   [
-    "informacje dodatkowe",
-    1
-   ],
-   [
-    "systemZewn",
-    1
-   ],
-   [
-    "system zewnętrzny",
-    1
-   ],
-   [
-    "identyfikatorZewnetrzny",
-    1
-   ],
-   [
-    "idZewnetrz",
-    1
-   ],
-   [
-    "identyfikator zewnętrzny",
-    1
-   ],
-   [
-    "tytul",
-    1
-   ],
-   [
-    "zrodloTyt",
-    1
-   ],
-   [
-    "tytuł dokumentu źródłowego",
-    1
-   ],
-   [
-    "data",
-    1
-   ],
-   [
-    "zrodloData",
-    1
-   ],
-   [
-    "data dokumentu źródłowego",
-    1
-   ],
-   [
-    "wydawca",
-    1
-   ]
+  [
+   "pole",
+   11284
+  ],
+  [
+   "góra, szczyt",
+   8887
+  ],
+  [
+   "las",
+   8719
+  ],
+  [
+   "wzgórze, wzniesienie",
+   8701
+  ],
+  [
+   "łąka",
+   7929
+  ],
+  [
+   "pola",
+   6393
+  ],
+  [
+   "droga",
+   5772
+  ],
+  [
+   "jezioro",
+   5749
+  ],
+  [
+   "potok",
+   4794
+  ],
+  [
+   "łąki",
+   4214
+  ],
+  [
+   "jaskinia, grota",
+   3120
+  ],
+  [
+   "inny obiekt",
+   2907
+  ],
+  [
+   "struga",
+   2682
+  ],
+  [
+   "staw",
+   2663
+  ],
+  [
+   "polana",
+   2504
+  ],
+  [
+   "bagno, błoto",
+   2418
+  ],
+  [
+   "uroczysko-dawna miejscowość",
+   2178
+  ],
+  [
+   "skała",
+   1921
+  ],
+  [
+   "wąwóz",
+   1718
+  ],
+  [
+   "dolina",
+   1401
+  ],
+  [
+   "park",
+   1319
+  ],
+  [
+   "rzeka",
+   1196
+  ],
+  [
+   "skrzyżowanie dróg",
+   1141
+  ],
+  [
+   "zbocze, stok",
+   973
+  ],
+  [
+   "wzgórza, wzniesienia",
+   954
+  ],
+  [
+   "kanał",
+   915
+  ],
+  [
+   "przełęcz",
+   862
+  ],
+  [
+   "region naturalny",
+   661
+  ],
+  [
+   "jar",
+   657
+  ],
+  [
+   "uroczysko",
+   631
+  ],
+  [
+   "most",
+   594
+  ],
+  [
+   "rów",
+   583
+  ],
+  [
+   "wyspa",
+   533
+  ],
+  [
+   "skały",
+   438
+  ],
+  [
+   "torfowisko",
+   345
+  ],
+  [
+   "sztuczny zbiornik wodny",
+   344
+  ],
+  [
+   "półwysep",
+   337
+  ],
+  [
+   "grodzisko",
+   294
+  ],
+  [
+   "żleb",
+   288
+  ],
+  [
+   "źródło",
+   262
+  ],
+  [
+   "głaz",
+   229
+  ],
+  [
+   "lasy",
+   223
+  ],
+  [
+   "stawy",
+   219
+  ],
+  [
+   "parów",
+   207
+  ],
+  [
+   "bagna, błota",
+   205
+  ],
+  [
+   "strumień",
+   198
+  ],
+  [
+   "wąwozy",
+   192
+  ],
+  [
+   "stare koryto",
+   176
+  ],
+  [
+   "hala",
+   162
+  ],
+  [
+   "zagłębienie",
+   140
+  ],
+  [
+   "pasmo górskie",
+   140
+  ],
+  [
+   "starorzecze",
+   137
+  ],
+  [
+   "śluza",
+   111
+  ],
+  [
+   "urwisko",
+   98
+  ],
+  [
+   "skarpa",
+   87
+  ],
+  [
+   "zatoka",
+   85
+  ],
+  [
+   "kopiec",
+   81
+  ],
+  [
+   "grań",
+   71
+  ],
+  [
+   "połonina",
+   70
+  ],
+  [
+   "obniżenie",
+   66
+  ],
+  [
+   "zapora",
+   64
+  ],
+  [
+   "wał",
+   63
+  ],
+  [
+   "wydma",
+   54
+  ],
+  [
+   "szaniec",
+   50
+  ],
+  [
+   "cyrk lodowcowy",
+   49
+  ],
+  [
+   "wybrzeże",
+   49
+  ],
+  [
+   "grobla",
+   46
+  ],
+  [
+   "zatoka jeziora",
+   46
+  ],
+  [
+   "góry",
+   44
+  ],
+  [
+   "kotlina",
+   44
+  ],
+  [
+   "torfowiska",
+   41
+  ],
+  [
+   "mielizna",
+   39
+  ],
+  [
+   "wydmy",
+   39
+  ],
+  [
+   "basen portowy",
+   39
+  ],
+  [
+   "wodospad",
+   38
+  ],
+  [
+   "głazy",
+   37
+  ],
+  [
+   "grzęda",
+   36
+  ],
+  [
+   "region historyczny",
+   36
+  ],
+  [
+   "nasyp",
+   31
   ]
- }
+ ],
+ "rows": 131494,
+ "found": []
 }
