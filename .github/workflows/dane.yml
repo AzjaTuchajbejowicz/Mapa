@@ -6,6 +6,7 @@ on:
       - scripts/zbuduj_dane.py
       - scripts/skarby.py
       - scripts/karczmy.py
+      - scripts/ohm_drogi.py
       - scripts/wikidata.py
       - scripts/wzmianki.py
       - scripts/polacz.py
@@ -51,6 +52,9 @@ jobs:
       - name: Zbierz udokumentowane skarby (Wikipedia, Wikidata)
         continue-on-error: true
         run: python3 scripts/skarby.py
+      - name: Dawne drogi z OpenHistoricalMap
+        continue-on-error: true
+        run: python3 scripts/ohm_drogi.py
       - name: Zbierz karczmy z Wikipedii
         continue-on-error: true
         run: python3 scripts/karczmy.py

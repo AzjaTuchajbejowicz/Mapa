@@ -128,6 +128,12 @@ table.kv td:first-child{color:var(--muted);width:38%}
 .chip.castle{border-color:#111;background:#111;color:#fff;font-weight:600}
 .me-icon{width:22px;height:22px;border-radius:50%;background:#fff;border:4px solid #e11d48;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.4);display:grid;place-items:center}
 .me-icon::after{content:"";width:6px;height:6px;border-radius:50%;background:#111}
+.dot.oldmap{border-radius:3px;background:linear-gradient(135deg,#e8d9b5,#a88c5a);box-shadow:0 0 0 1px #6b5530}
+.sw-ohm{width:28px;height:0;border-top:3px solid var(--road)}
+.oldsel{display:flex;flex-direction:column;gap:8px;padding:4px 0 6px}
+.oldsel select{font:400 16px/1.3 var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+.oldsel .op{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.oldsel input[type=range]{flex:1;accent-color:var(--accent)}
 .dot.lidar{border-radius:3px;background:linear-gradient(135deg,#eee,#777);box-shadow:0 0 0 1px var(--line)}
 .row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -167,6 +173,7 @@ table.kv td:first-child{color:var(--muted);width:38%}
   <button class="qc" type="button" data-chk="chkInn"><span class="dot inn"></span><span>Karczmy</span></button>
   <button class="qc" type="button" data-chk="chkCastle"><span class="dot castle"></span><span>Pałace i zamki</span></button>
   <button class="qc" type="button" data-chk="chkRoads"><span class="sw-road"></span><span>Trakty</span></button>
+  <button class="qc" type="button" data-chk="chkOld"><span class="dot oldmap"></span><span>Stara mapa</span></button>
   <button class="qc" type="button" data-chk="chkLidar"><span class="sw-lidar"></span><span>LIDAR</span></button>
   <button class="qc" type="button" data-chk="chkWater"><span class="dot mill"></span><span>Młyny</span></button>
   <button class="qc" type="button" data-chk="chkWind"><span class="dot mill ring"></span><span>Wiatraki</span></button>
@@ -252,10 +259,22 @@ table.kv td:first-child{color:var(--muted);width:38%}
         <input type="checkbox" id="chkCastle" checked></label>
     </div>
     <div class="group">
-      <p class="eyebrow">2 · Dawne szlaki (XVI–XIX w.)</p>
+      <p class="eyebrow">2 · Dawne szlaki i stare mapy</p>
       <label class="row"><span class="dot road"></span>
         <span class="lab">Główne trakty<small>Najważniejsze drogi handlowe i pocztowe. Linia łączy miasta na trasie, więc przebieg jest przybliżony. Po przybliżeniu widać też zabytkowe kamienie milowe i wąwozy drogowe, które wskazują dokładny ślad dawnych dróg.</small></span>
         <input type="checkbox" id="chkRoads" checked></label>
+      <label class="row"><span class="sw-ohm"></span>
+        <span class="lab">Drogi z dawnych map<small>Odcinki dróg odrysowane ze starych map w OpenHistoricalMap, z datą, od kiedy droga jest na mapach. Najwięcej na Śląsku, Pomorzu i Warmii. Widoczne po przybliżeniu.</small>
+        <span class="state" id="stOhm"></span></span>
+        <input type="checkbox" id="chkOhm" checked></label>
+      <label class="row"><span class="dot oldmap"></span>
+        <span class="lab">Stara mapa<small>Prawdziwa mapa z XVIII–XIX w. nałożona na teren, z dawnymi drogami dokładnie tam, gdzie biegły. Mapy udostępnia Instytut Historii PAN.</small></span>
+        <input type="checkbox" id="chkOld"></label>
+      <div class="oldsel">
+        <select id="oldPick" aria-label="Wybierz starą mapę"></select>
+        <div class="op"><span>Przezroczystość</span><input type="range" id="oldOp" min="20" max="100" value="80" aria-label="Przezroczystość starej mapy"><span id="oldOpV">80%</span></div>
+        <p class="note" id="oldNote"></p>
+      </div>
       <label class="row"><span class="dot lidar"></span>
         <span class="lab">Rzeźba terenu (LIDAR)<small>Cieniowany model terenu z Geoportalu. Widać na nim wąwozy i nasypy dawnych dróg, także tych, których nie ma na żadnej mapie.</small></span>
         <input type="checkbox" id="chkLidar"></label>
@@ -681,6 +700,71 @@ fetch('data/trakty_osm.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw 0;retur
     m.addTo(roadMarks); roadMarkN++});
   gate();
 }).catch(()=>{});
+
+/* ---------- stare mapy z XVIII–XIX w. (Instytut Historii PAN, serwis „Mapy z przeszłością”) ---------- */
+const PASTMAPS='https://pastmaps.cenagis.edu.pl/geoserver/ihpan/wms';
+const m2d=(x0,x1,y0,y1)=>{const a=L.CRS.EPSG3857.unproject(L.point(x0,y0)),b=L.CRS.EPSG3857.unproject(L.point(x1,y1));return[a.lng,b.lng,a.lat,b.lat]};
+const OLDMAPS=[
+  ['krakowskie18w_2180','1788–1792','Województwo krakowskie z doby Sejmu Czteroletniego','Małopolska',[18.3,21.0,49.8,51.2]],
+  ['slask18w_2180','ok. 1790','Śląsk w końcu XVIII wieku','Śląsk',[14.3,19.4,49.7,52.5]],
+  ['schroetter_3857','1796–1802','Mapa Schroettera 1:150 000','Prusy Wschodnie i Zachodnie: Pomorze, Warmia, Mazury',m2d(1681507,2556894,6858941,7577972)],
+  ['gilly_3857','1802–1803','Mapa Gilly’ego 1:150 000','Prusy Południowe: Wielkopolska, Mazowsze, Łódzkie',[14.9,21.9,50.1,53.7]],
+  ['textor_3857','1806–1808','Mapa Textora-Sotzmanna 1:150 000','Prusy Nowowschodnie: Podlasie, północne Mazowsze',m2d(2066627,2710109,6841905,7467785)],
+  ['gaul_3857','1807–1812','Mapa Gaula i Raczyńskiego 1:125 000','Wielkopolska',[15.1,17.4,51.5,53.0]],
+  ['TKKP_126k_3857','1839–1843','Mapa Kwatermistrzowska 1:126 000','Królestwo Polskie',[17.3,24.9,49.8,55.3]],
+  ['kummersberg_3857','1855','Mapa administracyjna Galicji 1:115 200','Galicja',[18.6,24.2,48.8,50.8]],
+  ['chrzanowski_3857','1859','Karta Dawnej Polski 1:300 000','cała dawna Rzeczpospolita',m2d(1324895,4261777,5750526,8008605)],
+  ['reymann_3857','2. poł. XIX w.','Mapa Reymanna 1:200 000','Europa Środkowa',m2d(1434029,2853627,6306301,7364489)],
+  ['m25k_3857','1870–1945','Messtischblätter 1:25 000 (najdokładniejsza)','dawny zabór pruski i Niemcy',[14.0,24.7,49.4,55.9]],
+  ['kdr_3857','ok. 1900','Karte des Deutschen Reiches 1:100 000','dawny zabór pruski i Niemcy',[5.8,23.3,47.2,56.0]],
+  ['wig25k_3857','1918–1939','Mapa szczegółowa WIG 1:25 000','II Rzeczpospolita, dla porównania',[15.7,27.3,49.2,55.0]],
+  ['wig100k_3857','1918–1939','Mapa taktyczna WIG 1:100 000','II Rzeczpospolita, dla porównania',[12.8,28.8,47.8,56.0]]
+];
+let oldLayer=null;
+const covers=(bb,ll)=>ll.lng>=bb[0]&&ll.lng<=bb[1]&&ll.lat>=bb[2]&&ll.lat<=bb[3];
+function fillOldPick(){
+  const c=map.getCenter(), cur=$('oldPick').value||store.get('oldMap','');
+  $('oldPick').innerHTML=OLDMAPS.map(m=>'<option value="'+m[0]+'">'+(covers(m[4],c)?'':'○ ')+m[1]+' · '+m[2]+'</option>').join('');
+  $('oldPick').value=OLDMAPS.some(m=>m[0]===cur)?cur:(OLDMAPS.find(m=>covers(m[4],c))||OLDMAPS[6])[0];
+  const m=OLDMAPS.find(x=>x[0]===$('oldPick').value);
+  $('oldNote').textContent='Zasięg: '+m[3]+'.'+(covers(m[4],c)?' Obszar mapy może mieć luki, gdzie nie zachowały się arkusze.':' Ten obszar leży poza zasięgiem tej mapy. Mapy oznaczone kółkiem nie obejmują środka widoku.');
+}
+function applyOld(){
+  if(oldLayer){map.removeLayer(oldLayer);oldLayer=null}
+  store.set('old',$('chkOld').checked); store.set('oldMap',$('oldPick').value);
+  if(!$('chkOld').checked){fillOldPick();return}
+  const m=OLDMAPS.find(x=>x[0]===$('oldPick').value), b=m[4];
+  oldLayer=L.tileLayer.wms(PASTMAPS,{layers:'ihpan:'+m[0],format:'image/jpeg',version:'1.1.1',tileSize:512,
+    opacity:+$('oldOp').value/100,maxZoom:20,zIndex:4,bounds:L.latLngBounds([b[2],b[0]],[b[3],b[1]]),
+    attribution:'Stare mapy © Instytut Historii PAN, Mapy z przeszłością'}).addTo(map);
+  fillOldPick();
+}
+$('oldPick').addEventListener('change',()=>{$('chkOld').checked=true;applyOld();syncQuick()});
+$('oldOp').addEventListener('input',()=>{$('oldOpV').textContent=$('oldOp').value+'%';if(oldLayer)oldLayer.setOpacity(+$('oldOp').value/100);store.set('oldOp',$('oldOp').value)});
+$('chkOld').addEventListener('change',applyOld);
+map.on('moveend',()=>{if(!$('layers').hidden)fillOldPick()});
+$('oldOp').value=store.get('oldOp','80'); $('oldOpV').textContent=$('oldOp').value+'%';
+$('chkOld').checked=store.get('old',false); fillOldPick(); applyOld();
+
+/* ---------- drogi z dawnych map (OpenHistoricalMap) ---------- */
+const ohmGroup=L.layerGroup(); let ohmN=0;
+const OHMH={motorway:'autostrada',trunk:'droga główna',primary:'droga główna',secondary:'droga ważniejsza',tertiary:'droga lokalna',unclassified:'droga lokalna',road:'droga',track:'droga polna',path:'ścieżka',bridleway:'droga konna'};
+fetch('data/drogi_ohm.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{
+  const col=css('--road')||'#8a5a2b';
+  d.elements.forEach(e=>{
+    const main=/trunk|primary|secondary|motorway/.test(e.h);
+    const l=L.polyline(e.c,{renderer:roadRenderer,color:col,weight:main?3.5:2.5,opacity:.85,dashArray:/track|path|bridleway/.test(e.h)?'4 5':null,bubblingMouseEvents:false});
+    l.on('click',ev=>{openKey='ohm:'+e.id;
+      const y=v=>v?String(v).replace(/^~/,'ok. '):'';
+      let h='<div class="chips"><span class="chip">'+(OHMH[e.h]||'droga')+'</span>'+(e.s?'<span class="chip">na mapach od '+esc(y(e.s))+'</span>':'')+(e.e?'<span class="chip">do '+esc(y(e.e))+'</span>':'')+'</div>';
+      h+='<p class="note">Data początku to rok najstarszej mapy, na której ktoś odrysował tę drogę. Sama droga może być starsza.'+(e.src?' Źródło: '+esc(e.src)+'.':'')+'</p>';
+      h+='<div class="links"><a target="_blank" rel="noopener" href="https://www.openhistoricalmap.org/way/'+e.id+'">Źródło w OpenHistoricalMap</a>'+
+         '<a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+ev.latlng.lat+','+ev.latlng.lng+'">Prowadź</a></div>';
+      showCard(e.n||'Dawna droga',h)});
+    l.addTo(ohmGroup); ohmN++});
+  $('stOhm').className='state ok'; $('stOhm').textContent=d.count+' odcinków dróg, dane z '+d.generated.split('-').reverse().join('.')+'.';
+  gate();
+}).catch(()=>{$('stOhm').className='state warn';$('stOhm').textContent='Lista dróg jest jeszcze przygotowywana.'});
 const lidar=L.tileLayer.wms('https://mapy.geoportal.gov.pl/wss/service/PZGIK/NMT/GRID1/WMS/ShadedRelief',{layers:'Raster',format:'image/png',transparent:true,version:'1.1.1',opacity:.7,maxZoom:20,zIndex:3,attribution:'NMT © GUGiK'});
 
 
@@ -995,6 +1079,7 @@ function renderSummary(){
     row('<span class="dot my"></span>','Moje punkty',fmt(myPoints.filter(p=>vb.contains([p.lat,p.lon])).length),fmt(myPoints.length))+
     row('<span class="dot gold"></span>','Skarby',fmt(golds.filter(x=>vb.contains(x.m.getLatLng())).length),fmt(golds.length))+
     row('<span class="sw-road"></span>','Dawne trakty',fmt(rIn),fmt(ROADS.length))+
+    '<tr class="sub"><td>drogi z dawnych map</td><td>'+(map.getZoom()>=8?fmt(ohmGroup.getLayers().filter(l=>vb.intersects(l.getBounds())).length):'–')+'</td><td>'+fmt(ohmN)+'</td></tr>'+
     '<tr class="sub"><td>kamienie milowe i wąwozy</td><td>'+view(roadMarks.getLayers().filter(m=>vb.contains(m.getLatLng())).length)+'</td><td>'+fmt(roadMarkN)+'</td></tr>'+
     '<tr class="sub"><td>długość w km</td><td>'+fmt(Math.round(kmIn))+'</td><td>'+fmt(Math.round(kmAll))+'</td></tr>'+
     row('<span class="dot mill"></span>','Młyny wodne',view(W.inv),pl(W.all))+subs(W.g)+
@@ -1016,6 +1101,7 @@ function gate(){
   tog(osmGroup,$('chkOsm').checked&&z);
   tog(innGroup,$('chkInn').checked&&z);
   tog(roadMarks,$('chkRoads').checked&&z);
+  tog(ohmGroup,$('chkOhm').checked&&map.getZoom()>=8);
   tog(castleGroup,$('chkCastle').checked&&z);
   tog(millGroups.water,$('chkWater').checked&&z); tog(millGroups.wind,$('chkWind').checked&&z);
 }
@@ -1034,6 +1120,8 @@ $('chkCastle').addEventListener('change',()=>{store.set('castle',$('chkCastle').
 $('chkInn').checked=store.get('inn',true);
 $('chkInn').addEventListener('change',()=>{store.set('inn',$('chkInn').checked);gate()});
 $('chkRoads').checked=store.get('roads',true); $('chkLidar').checked=store.get('lidar',false);
+$('chkOhm').checked=store.get('ohm',true);
+$('chkOhm').addEventListener('change',()=>{store.set('ohm',$('chkOhm').checked);gate()});
 function applyRoads(){$('chkRoads').checked?roadGroup.addTo(map):map.removeLayer(roadGroup);store.set('roads',$('chkRoads').checked);gate()}
 function applyLidar(){if($('chkLidar').checked)lidar.addTo(map);else map.removeLayer(lidar);store.set('lidar',$('chkLidar').checked)}
 $('chkRoads').addEventListener('change',applyRoads); $('chkLidar').addEventListener('change',applyLidar);
